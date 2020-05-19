@@ -1,2 +1,2 @@
 # csprng
-Cryptographically secure random number generator for PyTorch
+Cryptographically secure pseudorandom number generator for PyTorch
