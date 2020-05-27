@@ -14,6 +14,9 @@ jobs:
             export PATH=$HOME/conda/bin:$PATH
             conda install -y python=3
       - run:
+          name: Installing PyTorch
+          command: conda install pytorch -yc pytorch-nightly
+      - run:
           name: Installing CUDA
           command: |
             wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
@@ -21,9 +24,6 @@ jobs:
             sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
             sudo apt-get update
             sudo apt-get -y install cuda
-      - run:
-          name: Installing PyTorch
-          command: conda install pytorch -yc pytorch-nightly
       - run:
           name: Building CSPRNG
           command: python setup.py install
