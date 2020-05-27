@@ -12,6 +12,7 @@ jobs:
             wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
             bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
             export PATH=$HOME/conda/bin:$PATH
+            echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
             conda install -y python=3
       - run:
           name: Installing PyTorch
