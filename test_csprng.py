@@ -1,4 +1,5 @@
 import unittest
+import torch
 
 try:
     import torch_csprng as csprng
