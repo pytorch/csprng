@@ -6,13 +6,13 @@ jobs:
     resource_class: gpu.medium
     steps:
       - checkout
-      - run:
-          name: Installing Conda
-          command: |
-            sudo apt-get -qq -y install curl bzip2 \
-                && curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
-                && bash /tmp/miniconda.sh -bfp /usr/local \
-                && conda install -y python=3
+#      - run:
+#          name: Installing Conda
+#          command: |
+#            sudo apt-get -qq -y install curl bzip2 \
+#                && curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
+#                && bash /tmp/miniconda.sh -bfp /usr/local \
+#                && conda install -y python=3
       - run:
           name: Installing CUDA
           command: |
