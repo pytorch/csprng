@@ -27,7 +27,6 @@ jobs:
             sudo apt-get -y install cuda
       - run:
           name: Building CSPRNG
-          command: python setup.py install
-      - run:
-          name: Running tests
-          command: python test_csprng.py
+          command: |
+            python setup.py install
+            python test_csprng.py
