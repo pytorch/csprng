@@ -12,10 +12,10 @@ except ImportError:
 class TestCSPRNG(unittest.TestCase):
 
     all_generators = [
-        csprng_extension.create_random_device_generator(),
-        csprng_extension.create_random_device_generator_with_token('/dev/urandom'),
-        csprng_extension.create_mt19937_generator(),
-        csprng_extension.create_mt19937_generator_with_seed(42)
+        csprng.create_random_device_generator(),
+        csprng.create_random_device_generator_with_token('/dev/urandom'),
+        csprng.create_mt19937_generator(),
+        csprng.create_mt19937_generator_with_seed(42)
     ]
 
     int_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64]
