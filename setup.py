@@ -11,7 +11,7 @@ if sys.platform == 'win32':
 else:
     CXX_FLAGS = ['-g']
 
-setup(name='torch_csprng',
+setup(name='pytorch_csprng',
       ext_modules=[cpp_extension.CUDAExtension(
         'torch_csprng', [
             'csprng.cu'
