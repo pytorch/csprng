@@ -16,7 +16,9 @@ jobs:
             conda install -y python=3
       - run:
           name: Installing PyTorch
-          command: conda install pytorch -yc pytorch-nightly
+          command: |
+            conda install pytorch -yc pytorch-nightly
+            conda install -y numpy scipy
       - run:
           name: Installing CUDA
           command: |
