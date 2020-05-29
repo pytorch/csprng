@@ -55,7 +55,7 @@ struct CustomGeneratorImpl : public c10::GeneratorImpl {
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key, transform_t transform_func) {
   block_cipher_ctr_mode<scalar_t, uint_t, N>(iter, aes::block_t_size,
-    [key] __device__ (unsigned int idx) -> aes::block_t {
+    [key] __host__ __device__ (unsigned int idx) -> aes::block_t {
       aes::block_t block;
       memset(&block, 0, aes::block_t_size);
       *(reinterpret_cast<unsigned int*>(&block)) = idx;
@@ -91,7 +91,7 @@ struct RandomKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_ALL_TYPES_AND(ScalarType::Bool, iter.dtype(), "my_random_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type>(iter, key,
-        [] __device__ (RNGValues<1>* generator) -> scalar_t {
+        [] __host__ __device__ (RNGValues<1>* generator) -> scalar_t {
           uniform_int_distribution<scalar_t> random;
           return random(generator);
         }
@@ -103,7 +103,7 @@ struct RandomKernel {
 template<typename scalar_t, typename uint_t>
 void random_from_to_kernel_helper(TensorIterator& iter, uint64_t range, int64_t base, const uint8_t* key) {
   aes_helper<scalar_t, uint_t>(iter, key,
-    [range, base] __device__ (RNGValues<1>* generator) -> scalar_t {
+    [range, base] __host__ __device__ (RNGValues<1>* generator) -> scalar_t {
       uniform_int_from_to_distribution<scalar_t> random(range, base);
       return random(generator);
     }
@@ -113,7 +113,7 @@ void random_from_to_kernel_helper(TensorIterator& iter, uint64_t range, int64_t 
 template<typename scalar_t, typename uint_t>
 void random_full_range_kernel_helper(TensorIterator& iter, const uint8_t* key) {
   aes_helper<scalar_t, uint_t>(iter, key,
-    [] __device__ (RNGValues<1>* generator) -> scalar_t {
+    [] __host__ __device__ (RNGValues<1>* generator) -> scalar_t {
       uniform_int_full_range_distribution<scalar_t> random;
       return random(generator);
     }
@@ -176,7 +176,7 @@ struct UniformKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "uniform_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type>(iter, key,
-        [from, to] __device__ (RNGValues<1>* generator) -> scalar_t {
+        [from, to] __host__ __device__ (RNGValues<1>* generator) -> scalar_t {
           uniform_real_distribution<scalar_t> uniform(from, to);
           return uniform(generator);
         }
@@ -199,7 +199,7 @@ struct NormalKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "normal_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 2>(iter, key,
-        [mean, std] __device__ (RNGValues<2>* gen) -> scalar_t {
+        [mean, std] __host__ __device__ (RNGValues<2>* gen) -> scalar_t {
           normal_distribution<scalar_t> normal(mean, std);
           return normal(gen);
         }
@@ -245,7 +245,7 @@ struct CauchyKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "cauchy_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
-        [median, sigma] __device__ (RNGValues<1>* gen) -> scalar_t {
+        [median, sigma] __host__ __device__ (RNGValues<1>* gen) -> scalar_t {
           cauchy_distribution<scalar_t> cauchy(median, sigma);
           return cauchy(gen);
         }
@@ -267,7 +267,7 @@ struct LogNormalKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "log_normal_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 2>(iter, key,
-        [mean, std] __device__ (RNGValues<2>* gen) -> scalar_t {
+        [mean, std] __host__ __device__ (RNGValues<2>* gen) -> scalar_t {
           lognormal_distribution<scalar_t> logNormal(mean, std);
           return logNormal(gen);
         }
@@ -289,7 +289,7 @@ struct GeometricKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "geometric_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
-        [p] __device__ (RNGValues<1>* gen) -> scalar_t {
+        [p] __host__ __device__ (RNGValues<1>* gen) -> scalar_t {
           geometric_distribution<scalar_t> geometric(p);
           return geometric(gen);
         }
@@ -311,7 +311,7 @@ struct ExponentialKernel {
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "exponential_kernel_cuda", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
-        [lambda] __device__ (RNGValues<1>* gen) -> scalar_t {
+        [lambda] __host__ __device__ (RNGValues<1>* gen) -> scalar_t {
           exponential_distribution<scalar_t> exponential(lambda);
           return exponential(gen);
         }

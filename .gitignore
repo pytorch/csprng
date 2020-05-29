@@ -1,3 +1,3 @@
 dist/
 build/
-torch_csprng.egg-info/
+pytorch_csprng.egg-info/

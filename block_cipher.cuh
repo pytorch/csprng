@@ -28,11 +28,11 @@ at::Tensor key_tensor(c10::optional<at::Generator> generator, size_t block_t_siz
 // with random() and random64() methods, that are used by transformation function
 template<size_t size>
 struct RNGValues {
-  __device__ RNGValues(uint64_t* vals) {
+  __host__ __device__ RNGValues(uint64_t* vals) {
     memcpy(&vals_, vals, size * sizeof(uint64_t));
   }
-  uint32_t __device__ random() { auto res = static_cast<uint32_t>(vals_[index]); index++; return res; }
-  uint64_t __device__ random64() { auto res = vals_[index]; index++; return res; }
+  uint32_t __host__ __device__ random() { auto res = static_cast<uint32_t>(vals_[index]); index++; return res; }
+  uint64_t __host__ __device__ random64() { auto res = vals_[index]; index++; return res; }
 private:
   uint64_t vals_[size];
   int index = 0;
@@ -51,8 +51,7 @@ private:
 // `cipher`         is a callable that receives a counter `idx` and returns an encrypted block
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
-__global__ static void block_cipher_contiguous_kernel(scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func) {
-  const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+__host__ __device__ static void block_cipher_contiguous_kernel_helper(int idx, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func) {
   const auto unroll_factor = block_t_size / sizeof(uint_t) / N;
   if (unroll_factor * idx < numel) {
     auto block = cipher(idx);
@@ -72,6 +71,22 @@ __global__ static void block_cipher_contiguous_kernel(scalar_t* data, int numel,
   }
 }
 
+template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
+__global__ static void block_cipher_contiguous_kernel_cuda(scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func) {
+  const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+  block_cipher_contiguous_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func);
+}
+
+template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
+static void block_cipher_contiguous_kernel_cpu(int gridDim_x, int blockDim_x, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func) {
+  for (auto blockIdx_x = 0; blockIdx_x < gridDim_x; ++blockIdx_x) {
+    for (auto threadIdx_x = 0; threadIdx_x < blockDim_x; ++threadIdx_x) {
+      const auto idx = blockIdx_x * blockDim_x + threadIdx_x;
+      block_cipher_contiguous_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func);
+    }
+  }
+}
+
 // Runs a block cipher in a counter mode in approximately `numel / (block_t_size / sizeof(uint_t) / N)` CUDA threads,
 // without any assumption about target tensor layout. It uses `offset_calc` to find memory locations of
 // the tensor elements.
@@ -86,8 +101,7 @@ __global__ static void block_cipher_contiguous_kernel(scalar_t* data, int numel,
 // `cipher`         is a callable that receives a counter `idx` and returns an encrypted block
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
-__global__ static void block_cipher_kernel(scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, OffsetCalculator<1> offset_calc) {
-  const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+__host__ __device__ static void block_cipher_kernel_helper(int idx, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, OffsetCalculator<1> offset_calc) {
   const auto unroll_factor = block_t_size / sizeof(uint_t) / N;
   if (unroll_factor * idx < numel) {
     auto block = cipher(idx);
@@ -107,6 +121,22 @@ __global__ static void block_cipher_kernel(scalar_t* data, int numel, int block_
   }
 }
 
+template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
+__global__ static void block_cipher_kernel_cuda(scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, OffsetCalculator<1> offset_calc) {
+  const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+  block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, offset_calc);
+}
+
+template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
+static void block_cipher_kernel_cpu(int gridDim_x, int blockDim_x, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, OffsetCalculator<1> offset_calc) {
+  for (auto blockIdx_x = 0; blockIdx_x < gridDim_x; ++blockIdx_x) {
+    for (auto threadIdx_x = 0; threadIdx_x < blockDim_x; ++threadIdx_x) {
+      const auto idx = blockIdx_x * blockDim_x + threadIdx_x;
+      block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, offset_calc);
+    }
+  }
+}
+
 // Runs a block cipher in a counter mode in approximately `numel / (block_t_size / sizeof(uint_t) / N)` CUDA threads.
 // Each CUDA thread generates `block_t_size`-bytes random state and divides it into `block_t_size / sizeof(uint_t)` sub-blocks.
 // Then `transform_func` transforms `N` random state sub-blocks passed in a `RNGValues` to final random values of type `scalar_t`.
@@ -120,14 +150,25 @@ void block_cipher_ctr_mode(at::TensorIterator& iter, int block_t_size, cipher_t 
   const auto block = 256;
   const auto grid = (numel + (block * unroll_factor) - 1) / (block * unroll_factor);
   scalar_t* data = (scalar_t*)iter.data_ptr(0);
-  auto stream = at::cuda::getCurrentCUDAStream();
-  if (iter.output(0).is_contiguous()) {
-    block_cipher_contiguous_kernel<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(data, numel, block_t_size, cipher, transform_func);
+  if (iter.device_type() == at::kCPU) {
+    if (iter.output(0).is_contiguous()) {
+      block_cipher_contiguous_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(grid, block, data, numel, block_t_size, cipher, transform_func);
+    } else {
+      auto offset_calc = make_offset_calculator<1>(iter);
+      block_cipher_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(grid, block, data, numel, block_t_size, cipher, transform_func, offset_calc);
+    }
+  } else if (iter.device_type() == at::kCUDA) {
+    auto stream = at::cuda::getCurrentCUDAStream();
+    if (iter.output(0).is_contiguous()) {
+      block_cipher_contiguous_kernel_cuda<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(data, numel, block_t_size, cipher, transform_func);
+    } else {
+      auto offset_calc = make_offset_calculator<1>(iter);
+      block_cipher_kernel_cuda<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(data, numel, block_t_size, cipher, transform_func, offset_calc);
+    }
+    AT_CUDA_CHECK(cudaGetLastError());
   } else {
-    auto offset_calc = make_offset_calculator<1>(iter);
-    block_cipher_kernel<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(data, numel, block_t_size, cipher, transform_func, offset_calc);
+    TORCH_CHECK(false, "block_cipher_ctr_mode supports only CPU and CUDA devices");
   }
-  AT_CUDA_CHECK(cudaGetLastError());
 }
 
 }}
