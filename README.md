@@ -19,15 +19,15 @@ The following list of methods supports all forementioned PRNGs:
 
 | Kernel                 | CUDA | CPU |
 |------------------------|------|-----|
-| random_()              | yes  | no  |
-| random_(to)            | yes  | no  |
-| random_(from, to)      | yes  | no  |
-| uniform_(from, to)     | yes  | no  |
-| normal_(mean, std)     | yes  | no  |
-| cauchy_(median, sigma) | yes  | no  |
-| log_normal_(mean, std) | yes  | no  |
-| geometric_(p)          | yes  | no  |
-| exponential_(lambda)   | yes  | no  |
+| random_()              | yes  | yes |
+| random_(to)            | yes  | yes |
+| random_(from, to)      | yes  | yes |
+| uniform_(from, to)     | yes  | yes |
+| normal_(mean, std)     | yes  | yes |
+| cauchy_(median, sigma) | yes  | yes |
+| log_normal_(mean, std) | yes  | yes |
+| geometric_(p)          | yes  | yes |
+| exponential_(lambda)   | yes  | yes |
 
 ## How to build
 
