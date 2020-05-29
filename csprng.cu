@@ -175,10 +175,10 @@ struct UniformKernel {
     const Tensor key_t = key_tensor<RNG>(generator, aes::block_t_size, iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "uniform_kernel_cuda", [&] {
-      aes_helper<scalar_t, UIntType<scalar_t>::type>(iter, key,
+      aes_helper<scalar_t, uint64_t>(iter, key,
         [from, to] __host__ __device__ (RNGValues<1>* generator) -> scalar_t {
-          uniform_real_distribution<scalar_t> uniform(from, to);
-          return uniform(generator);
+          uniform_real_distribution<double> uniform(from, to);
+          return static_cast<scalar_t>(uniform(generator));
         }
       );
     });
@@ -198,10 +198,10 @@ struct NormalKernel {
     const Tensor key_t = key_tensor<RNG>(generator, aes::block_t_size, iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "normal_kernel_cuda", [&] {
-      aes_helper<scalar_t, UIntType<scalar_t>::type, 2>(iter, key,
+      aes_helper<scalar_t, uint64_t, 2>(iter, key,
         [mean, std] __host__ __device__ (RNGValues<2>* gen) -> scalar_t {
-          normal_distribution<scalar_t> normal(mean, std);
-          return normal(gen);
+          normal_distribution<double> normal(mean, std);
+          return static_cast<scalar_t>(normal(gen));
         }
       );
     });
@@ -244,10 +244,10 @@ struct CauchyKernel {
     const Tensor key_t = key_tensor<RNG>(generator, aes::block_t_size, iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "cauchy_kernel_cuda", [&] {
-      aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
+      aes_helper<scalar_t, uint64_t, 1>(iter, key,
         [median, sigma] __host__ __device__ (RNGValues<1>* gen) -> scalar_t {
-          cauchy_distribution<scalar_t> cauchy(median, sigma);
-          return cauchy(gen);
+          cauchy_distribution<double> cauchy(median, sigma);
+          return static_cast<scalar_t>(cauchy(gen));
         }
       );
     });
@@ -266,10 +266,10 @@ struct LogNormalKernel {
     const Tensor key_t = key_tensor<RNG>(generator, aes::block_t_size, iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "log_normal_cuda", [&] {
-      aes_helper<scalar_t, UIntType<scalar_t>::type, 2>(iter, key,
+      aes_helper<scalar_t, uint64_t, 2>(iter, key,
         [mean, std] __host__ __device__ (RNGValues<2>* gen) -> scalar_t {
-          lognormal_distribution<scalar_t> logNormal(mean, std);
-          return logNormal(gen);
+          lognormal_distribution<double> logNormal(mean, std);
+          return static_cast<scalar_t>(logNormal(gen));
         }
       );
     });
@@ -310,10 +310,10 @@ struct ExponentialKernel {
     const Tensor key_t = key_tensor<RNG>(generator, aes::block_t_size, iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "exponential_kernel_cuda", [&] {
-      aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
+      aes_helper<scalar_t, uint64_t, 1>(iter, key,
         [lambda] __host__ __device__ (RNGValues<1>* gen) -> scalar_t {
-          exponential_distribution<scalar_t> exponential(lambda);
-          return exponential(gen);
+          exponential_distribution<double> exponential(lambda);
+          return static_cast<scalar_t>(exponential(gen));
         }
       );
     });
