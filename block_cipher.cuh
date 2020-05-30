@@ -88,14 +88,13 @@ static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, scalar_t*
 
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
 static void block_cipher_kernel_cpu(int64_t total, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
-  // if (numel < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
-  //   block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
-  // } else {
-  //   at::parallel_for(0, total, at::internal::GRAIN_SIZE, [&](int64_t begin, int64_t end) {
-  //     block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(begin, end, data, numel, block_t_size, cipher, transform_func, index_calc);
-  //   });
-  // }
-  block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
+  if (total < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
+    block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
+  } else {
+    at::parallel_for(0, total, at::internal::GRAIN_SIZE, [&](int64_t begin, int64_t end) {
+      block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(begin, end, data, numel, block_t_size, cipher, transform_func, index_calc);
+    });
+  }
 }
 
 // Runs a block cipher in a counter mode in approximately `numel / (block_t_size / sizeof(uint_t) / N)` CUDA threads.
