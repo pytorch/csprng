@@ -17,17 +17,17 @@ CSPRNG exposes four methods to create crypto-secure and non-crypto-secure PRNGs:
 
 The following list of methods supports all forementioned PRNGs:
 
-| Kernel                 | CUDA | CPU                            |
-|------------------------|------|--------------------------------|
-| random_()              | yes  | yes(slow, parallelization TBD) |
-| random_(to)            | yes  | yes(slow, parallelization TBD) |
-| random_(from, to)      | yes  | yes(slow, parallelization TBD) |
-| uniform_(from, to)     | yes  | yes(slow, parallelization TBD) |
-| normal_(mean, std)     | yes  | yes(slow, parallelization TBD) |
-| cauchy_(median, sigma) | yes  | yes(slow, parallelization TBD) |
-| log_normal_(mean, std) | yes  | yes(slow, parallelization TBD) |
-| geometric_(p)          | yes  | yes(slow, parallelization TBD) |
-| exponential_(lambda)   | yes  | yes(slow, parallelization TBD) |
+| Kernel                 | CUDA | CPU |
+|------------------------|------|-----|
+| random_()              | yes  | yes |
+| random_(to)            | yes  | yes |
+| random_(from, to)      | yes  | yes |
+| uniform_(from, to)     | yes  | yes |
+| normal_(mean, std)     | yes  | yes |
+| cauchy_(median, sigma) | yes  | yes |
+| log_normal_(mean, std) | yes  | yes |
+| geometric_(p)          | yes  | yes |
+| exponential_(lambda)   | yes  | yes |
 
 ## How to build
 
