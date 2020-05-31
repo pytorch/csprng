@@ -4,6 +4,7 @@
 #include <ATen/native/TensorIterator.h>
 #include <ATen/cuda/detail/OffsetCalculator.cuh>
 #include <ATen/cuda/Exceptions.h>
+#include <ATen/Parallel.h>
 #include <cstdint>
 #include <mutex>
 
@@ -79,12 +80,20 @@ __global__ static void block_cipher_kernel_cuda(scalar_t* data, int numel, int b
 }
 
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-static void block_cipher_kernel_cpu(int gridDim_x, int blockDim_x, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
-  for (auto blockIdx_x = 0; blockIdx_x < gridDim_x; ++blockIdx_x) {
-    for (auto threadIdx_x = 0; threadIdx_x < blockDim_x; ++threadIdx_x) {
-      const auto idx = blockIdx_x * blockDim_x + threadIdx_x;
-      block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
-    }
+static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+  for (auto idx = begin; idx < end; ++idx) {
+    block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
+  }
+}
+
+template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
+static void block_cipher_kernel_cpu(int64_t total, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+  if (total < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
+    block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
+  } else {
+    at::parallel_for(0, total, at::internal::GRAIN_SIZE, [&](int64_t begin, int64_t end) {
+      block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(begin, end, data, numel, block_t_size, cipher, transform_func, index_calc);
+    });
   }
 }
 
@@ -107,10 +116,10 @@ void block_cipher_ctr_mode(at::TensorIterator& iter, int block_t_size, cipher_t 
   if (iter.device_type() == at::kCPU) {
     if (iter.output(0).is_contiguous()) {
       block_cipher_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(
-        grid, block, data, numel, block_t_size, cipher, transform_func, index_calc_identity);
+        grid * block, data, numel, block_t_size, cipher, transform_func, index_calc_identity);
     } else {
       block_cipher_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(
-        grid, block, data, numel, block_t_size, cipher, transform_func, index_calc_offset);
+        grid * block, data, numel, block_t_size, cipher, transform_func, index_calc_offset);
     }
   } else if (iter.device_type() == at::kCUDA) {
     auto stream = at::cuda::getCurrentCUDAStream();
