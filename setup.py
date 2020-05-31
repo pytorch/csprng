@@ -17,5 +17,5 @@ setup(name='pytorch_csprng',
             'csprng.cu'
         ],
         extra_compile_args={'cxx': CXX_FLAGS,
-                            'nvcc': ['-O2', '--expt-extended-lambda']})],
+                            'nvcc': ['-O2', '--expt-extended-lambda', '-DAT_PARALLEL_OPENMP=1']})],
       cmdclass={'build_ext': cpp_extension.BuildExtension})
