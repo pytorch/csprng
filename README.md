@@ -18,7 +18,7 @@ Advantages:
 
 - A user can choose either seed-based(for testing) or random device based(fully crypto-secure) generators
 - One generator instance for both CPU and CUDA tensors(because the encryption key is always generated on CPU)
-- CPU random number generation is also parallel(unlike standard PyTorch CPU generator).
+- CPU random number generation is also parallel(unlike default PyTorch CPU generator).
 
 ## Featues
 
