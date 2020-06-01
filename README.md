@@ -24,7 +24,7 @@ Advantages:
 
 CSPRNG exposes four methods to create crypto-secure and non-crypto-secure PRNGs:
 
-| PRNG                                                     | Is crypto-secure? | Has seed? | Underlying implementation                                                                                                      |
+| Method to create PRNG                                    | Is crypto-secure? | Has seed? | Underlying implementation                                                                                                      |
 |----------------------------------------------------------|-------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
 | create_random_device_generator()                         |         yes       |    no     | [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) created with default constructor          |
 | create_random_device_generator_with_token(token: string) |         yes       |    no     | [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) created with a token(e.g. "/dev/urandom") |
