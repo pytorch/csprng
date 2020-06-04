@@ -13,9 +13,9 @@ class TestCSPRNG(unittest.TestCase):
 
     all_generators = [
         csprng.create_random_device_generator(),
-        csprng.create_random_device_generator_with_token('/dev/urandom'),
+        csprng.create_random_device_generator('/dev/urandom'),
         csprng.create_mt19937_generator(),
-        csprng.create_mt19937_generator_with_seed(42)
+        csprng.create_mt19937_generator(42)
     ]
 
     int_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64]
@@ -45,9 +45,9 @@ class TestCSPRNG(unittest.TestCase):
 
     def test_random_cpu_vs_cuda(self):
         for dtype in self.num_dtypes:
-            gen = csprng.create_mt19937_generator_with_seed(42)
+            gen = csprng.create_mt19937_generator(42)
             cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').random_(generator=gen)
-            gen = csprng.create_mt19937_generator_with_seed(42)
+            gen = csprng.create_mt19937_generator(42)
             cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').random_(generator=gen)
             self.assertTrue((cpu_t == cuda_t.cpu()).all())
 
@@ -63,9 +63,9 @@ class TestCSPRNG(unittest.TestCase):
     def test_random_to_cpu_vs_cuda(self):
         to_ = 42
         for dtype in self.num_dtypes:
-            gen = csprng.create_mt19937_generator_with_seed(42)
+            gen = csprng.create_mt19937_generator(42)
             cpu_t = torch.zeros(self.size, dtype=dtype, device='cpu').random_(to_, generator=gen)
-            gen = csprng.create_mt19937_generator_with_seed(42)
+            gen = csprng.create_mt19937_generator(42)
             cuda_t = torch.zeros(self.size, dtype=dtype, device='cuda').random_(to_, generator=gen)
             self.assertTrue((cpu_t == cuda_t.cpu()).all())
 
@@ -85,9 +85,9 @@ class TestCSPRNG(unittest.TestCase):
             for from_ in [0, 24, 42]:
                 for to_ in [42, 99, 123]:
                     if from_ < to_:
-                        gen = csprng.create_mt19937_generator_with_seed(42)
+                        gen = csprng.create_mt19937_generator(42)
                         cpu_t = torch.zeros(self.size, dtype=dtype, device='cpu').random_(from_, to_, generator=gen)
-                        gen = csprng.create_mt19937_generator_with_seed(42)
+                        gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.zeros(self.size, dtype=dtype, device='cuda').random_(from_, to_, generator=gen)
                         self.assertTrue((cpu_t == cuda_t.cpu()).all())
 
@@ -109,9 +109,9 @@ class TestCSPRNG(unittest.TestCase):
                 self.assertTrue(0.4 < (t.eq(True)).to(torch.int).sum().item() / self.size < 0.6)
 
     def test_random_bool_cpu_vs_cuda(self):
-        gen = csprng.create_mt19937_generator_with_seed(42)
+        gen = csprng.create_mt19937_generator(42)
         cpu_t = torch.empty(self.size, dtype=torch.bool, device='cpu').random_(generator=gen)
-        gen = csprng.create_mt19937_generator_with_seed(42)
+        gen = csprng.create_mt19937_generator(42)
         cuda_t = torch.empty(self.size, dtype=torch.bool, device='cuda').random_(generator=gen)
         self.assertTrue((cpu_t == cuda_t.cpu()).all())
 
@@ -131,9 +131,9 @@ class TestCSPRNG(unittest.TestCase):
             for from_ in [-42, 0, 4.2]:
                 for to_ in [-4.2, 0, 42]:
                     if to_ > from_:
-                        gen = csprng.create_mt19937_generator_with_seed(42)
+                        gen = csprng.create_mt19937_generator(42)
                         cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').uniform_(from_, to_, generator=gen)
-                        gen = csprng.create_mt19937_generator_with_seed(42)
+                        gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').uniform_(from_, to_, generator=gen)
                         self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
@@ -151,9 +151,9 @@ class TestCSPRNG(unittest.TestCase):
         for dtype in self.fp_ftypes:
             for mean in [-3, 0, 7]:
                 for std in [1, 5, 7]:
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').normal_(mean=mean, std=std, generator=gen)
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').normal_(mean=mean, std=std, generator=gen)
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
@@ -171,9 +171,9 @@ class TestCSPRNG(unittest.TestCase):
         for dtype in self.fp_ftypes:
             for mean in [-3, 0, 7]:
                 for std in [1, 5, 7]:
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').log_normal_(mean=mean, std=std, generator=gen)
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').log_normal_(mean=mean, std=std, generator=gen)
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-4)
 
@@ -189,9 +189,9 @@ class TestCSPRNG(unittest.TestCase):
     def test_exponential_cpu_vs_cuda(self):
         for dtype in self.fp_ftypes:
             for lambd in [0.5, 1.0, 5.0]:
-                gen = csprng.create_mt19937_generator_with_seed(42)
+                gen = csprng.create_mt19937_generator(42)
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
-                gen = csprng.create_mt19937_generator_with_seed(42)
+                gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').exponential_(lambd=lambd, generator=gen)
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
@@ -209,9 +209,9 @@ class TestCSPRNG(unittest.TestCase):
         for dtype in self.fp_ftypes:
             for median in [-10, 0, 50]:
                 for sigma in [0.5, 1.0, 10.0]:
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').cauchy_(median=median, sigma=sigma, generator=gen)
-                    gen = csprng.create_mt19937_generator_with_seed(42)
+                    gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').cauchy_(median=median, sigma=sigma, generator=gen)
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
@@ -229,9 +229,9 @@ class TestCSPRNG(unittest.TestCase):
     def test_geometric_cpu_vs_cuda(self):
         for dtype in self.fp_ftypes:
             for p in [0.2, 0.5, 0.8]:
-                gen = csprng.create_mt19937_generator_with_seed(42)
+                gen = csprng.create_mt19937_generator(42)
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').geometric_(p=p, generator=gen)
-                gen = csprng.create_mt19937_generator_with_seed(42)
+                gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 

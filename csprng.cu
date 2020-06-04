@@ -326,20 +326,20 @@ Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) 
 
 // ====================================================================================================================
 
-Generator create_random_device_generator() {
-  return make_generator<CustomGeneratorImpl>(true);
+Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
+  if (token.has_value()) {
+    return make_generator<CustomGeneratorImpl>(*token);
+  } else {
+    return make_generator<CustomGeneratorImpl>(true);
+  }
 }
 
-Generator create_random_device_generator_with_token(const std::string& token) {
-  return make_generator<CustomGeneratorImpl>(token);
-}
-
-Generator create_mt19937_generator() {
-  return make_generator<CustomGeneratorImpl>(false);
-}
-
-Generator create_mt19937_generator_with_seed(uint64_t seed) {
-  return make_generator<CustomGeneratorImpl>(seed);
+Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) {
+  if (seed.has_value()) {
+    return make_generator<CustomGeneratorImpl>(*seed);
+  } else {
+    return make_generator<CustomGeneratorImpl>(false);
+  }
 }
 
 TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
@@ -368,8 +368,6 @@ TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("create_random_device_generator", &create_random_device_generator);
-  m.def("create_random_device_generator_with_token", &create_random_device_generator_with_token);
-  m.def("create_mt19937_generator", &create_mt19937_generator);
-  m.def("create_mt19937_generator_with_seed", &create_mt19937_generator_with_seed);
+  m.def("create_random_device_generator", &create_random_device_generator, py::arg("token") = nullptr);
+  m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
 }
