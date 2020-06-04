@@ -3,6 +3,7 @@ import torch
 from scipy import stats
 import numpy as np
 import math
+import random
 
 try:
     import torch_csprng as csprng
@@ -23,6 +24,8 @@ class TestCSPRNG(unittest.TestCase):
     fp_ftypes = [torch.float, torch.double]
 
     num_dtypes = int_dtypes + fp_ftypes
+
+    all_dtypes = num_dtypes + [torch.bool]
 
     size = 1000
 
@@ -234,6 +237,41 @@ class TestCSPRNG(unittest.TestCase):
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+
+    def test_non_contiguous_vs_contiguous(self):
+        size = 10
+        for device in self.all_devices:
+            for dtype in self.all_dtypes:
+                for i in range(10):
+                    t = torch.zeros([size, size, size], dtype=dtype, device=device)
+                    x1 = random.randrange(0, size)
+                    y1 = random.randrange(0, size)
+                    z1 = random.randrange(0, size)
+                    x2 = random.randrange(x1 + 1, max(x1 + 2, size))
+                    y2 = random.randrange(y1 + 1, max(y1 + 2, size))
+                    z2 = random.randrange(z1 + 1, max(z1 + 2, size))
+                    maybe_non_contiguous = t[x1:x2, y1:y2, z1:z2]
+                    assert(maybe_non_contiguous.numel() > 0)
+
+                    if not maybe_non_contiguous.is_contiguous():
+                        seed = random.randrange(1000)
+
+                        non_contiguous = maybe_non_contiguous
+                        gen = csprng.create_mt19937_generator(seed)
+                        non_contiguous.random_(generator=gen)
+
+                        contiguous = torch.zeros_like(non_contiguous)
+                        gen = csprng.create_mt19937_generator(seed)
+                        contiguous.random_(generator=gen)
+
+                        assert(contiguous.is_contiguous())
+                        self.assertTrue((non_contiguous == contiguous).all())
+
+                        for x in range(0, size):
+                            for y in range(0, size):
+                                for z in range(0, size):
+                                    if not x1 <= x < x2 and not y1 <= y < y2 and not z1 <= z < z2:
+                                        self.assertTrue(t[x, y, z] == 0)
 
 if __name__ == '__main__':
     unittest.main()
