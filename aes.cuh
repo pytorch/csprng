@@ -90,7 +90,7 @@ __constant__ const uint8_t Rcon[11] = {
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states. 
 __host__ __device__ void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key){
-  unsigned i, j, k;
+  unsigned int i, j, k;
   uint8_t tempa[4]; // Used for the column/row operations
   
   // The first round key is the key itself.
