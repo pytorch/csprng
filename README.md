@@ -7,7 +7,7 @@ CSPRNG is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/
 ## Design
 
 CSPRNG generates a random 128-bits key on CPU using one of its generators and runs
-[AES128](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CTR mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)) 
+[AES128](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CTR mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
 mode either on CPU or CUDA to generate random 128 bits state and apply transformation function to map it to target tensor values.
 This approach is based on [Parallel Random Numbers: As Easy as 1, 2, 3(John K. Salmon, Mark A. Moraes, Ron O. Dror, and David E. Shaw, D. E. Shaw Research)](http://www.thesalmons.org/john/random123/papers/random123sc11.pdf).
 It makes CSPRNG both crypto-secure and parallel on CUDA and CPU.
@@ -18,18 +18,16 @@ Advantages:
 
 - A user can choose either seed-based(for testing) or random device based(fully crypto-secure) generators
 - One generator instance for both CPU and CUDA tensors(because the encryption key is always generated on CPU)
-- CPU random number generation is also parallel(unlike default PyTorch CPU generator).
+- CPU random number generation is also parallel(unlike default PyTorch CPU generator)
 
 ## Featues
 
-CSPRNG exposes four methods to create crypto-secure and non-crypto-secure PRNGs:
+CSPRNG exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
 
-| Method to create PRNG                                    | Is crypto-secure? | Has seed? | Underlying implementation                                                                                                      |
-|----------------------------------------------------------|-------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
-| create_random_device_generator()                         |         yes       |    no     | [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) created with default constructor          |
-| create_random_device_generator_with_token(token: string) |         yes       |    no     | [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) created with a token(e.g. "/dev/urandom") |
-| create_mt19937_generator()                               |         no        |    yes    | [std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) created with default constructor      |
-| create_mt19937_generator_with_seed(seed: int)            |         no        |    yes    | [std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) created with a seed                   |
+| Method to create PRNG                              | Is crypto-secure? | Has seed? | Underlying implementation                                                                                                          |
+|----------------------------------------------------|-------------------|-----------|------------------------------------------------------------------------------------------------------------------------------------|
+| create_random_device_generator(token: string=None) |         yes       |    no     | See [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) and [it's constructor](https://en.cppreference.com/w/cpp/numeric/random/random_device/random_device). The implementation in libstdc++ expects token to name the source of random bytes. Possible token values include "default", "rand_s", "rdseed", "rdrand", "rdrnd", "/dev/urandom", "/dev/random", "mt19937", and integer string specifying the seed of the mt19937 engine. (Token values other than "default" are only valid for certain targets.) If token=None then constructs a new std::random_device object with an implementation-defined token. |
+| create_mt19937_generator(seed: int=None)           |         no        |    yes    | See [std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) and [it's constructor](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine/mersenne_twister_engine). Constructs a mersenne_twister_engine object, and initializes its internal state sequence to pseudo-random values. If seed=None then seeds the engine with default_seed.|
 
 The following list of methods supports all forementioned PRNGs:
 
@@ -56,7 +54,7 @@ import torch
 import torch_csprng as csprng
 
 # Create crypto-secure PRNG from /dev/urandom:
-urandom_gen = csprng.create_random_device_generator_with_token('/dev/urandom')
+urandom_gen = csprng.create_random_device_generator('/dev/urandom')
 
 # Create empty boolean tensor on CUDA and initialize it with random values from urandom_gen:
 print(torch.empty(10, dtype=torch.bool, device='cuda').random_(generator=urandom_gen))
@@ -85,7 +83,7 @@ tensor([ 1.2885,  0.3240, -1.1813,  0.8629,  0.5714,  2.3720, -0.5627, -0.5551,
         -0.6304,  0.1090], device='cuda:0')
 
 # Create non-crypto-secure MT19937 PRNG with seed
-mt19937_gen = csprng.create_mt19937_generator_with_seed(42)
+mt19937_gen = csprng.create_mt19937_generator(42)
 
 print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
 tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
@@ -97,7 +95,7 @@ print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
 tensor([14.,  5.,  4.,  5.,  1.,  1.,  8.,  1.,  7., 10.], device='cuda:0')
 
 # Recreate MT19937 PRNG with the same seed
-mt19937_gen = csprng.create_mt19937_generator_with_seed(42)
+mt19937_gen = csprng.create_mt19937_generator(42)
 
 print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
 tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
