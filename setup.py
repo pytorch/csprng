@@ -11,11 +11,20 @@ if sys.platform == 'win32':
 else:
     CXX_FLAGS = ['-g']
 
-setup(name='pytorch_csprng',
-      ext_modules=[cpp_extension.CUDAExtension(
-        'torch_csprng', [
-            'csprng.cu'
-        ],
+build_cuda = cpp_extension.CUDA_HOME != None
+
+if build_cuda:
+    csprng_ext = cpp_extension.CUDAExtension(
+        'torch_csprng', ['csprng.cu'],
         extra_compile_args={'cxx': CXX_FLAGS,
-                            'nvcc': ['-O2', '--expt-extended-lambda', '-DAT_PARALLEL_OPENMP=1']})],
+                            'nvcc': ['-O2', '--expt-extended-lambda', '-DAT_PARALLEL_OPENMP=1']}
+    )
+else:
+    csprng_ext = cpp_extension.CppExtension(
+        'torch_csprng', ['csprng.cpp'],
+        extra_compile_args={'cxx': CXX_FLAGS + ['-DAT_PARALLEL_OPENMP=1']}
+    )
+
+setup(name='pytorch_csprng',
+      ext_modules=[csprng_ext],
       cmdclass={'build_ext': cpp_extension.BuildExtension})

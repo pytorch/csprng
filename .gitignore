@@ -2,3 +2,4 @@ dist/
 build/
 pytorch_csprng.egg-info/
 .idea
+.vscode
