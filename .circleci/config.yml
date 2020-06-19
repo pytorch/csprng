@@ -1,12 +1,9 @@
 version: 2.1
-jobs:
 
-  build-nvcc:
-    machine:
-      image: ubuntu-1604:201903-01
-    resource_class: gpu.small
+commands:
+
+  install-conda:
     steps:
-      - checkout
       - run:
           name: Installing Conda
           command: |
@@ -15,6 +12,16 @@ jobs:
             export PATH=$HOME/conda/bin:$PATH
             echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
             conda install -y python=3
+
+jobs:
+
+  build-nvcc:
+    machine:
+      image: ubuntu-1604:201903-01
+    resource_class: gpu.small
+    steps:
+      - checkout
+      - install-conda
       - run:
           name: Installing PyTorch
           command: |
@@ -41,14 +48,7 @@ jobs:
     resource_class: large
     steps:
       - checkout
-      - run:
-          name: Installing Conda
-          command: |
-            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-            bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
-            export PATH=$HOME/conda/bin:$PATH
-            echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
-            conda install -y python=3
+      - install-conda
       - run:
           name: Installing PyTorch
           command: |
