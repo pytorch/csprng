@@ -13,6 +13,37 @@ commands:
             echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
             conda install -y python=3
 
+  install-pytorch:
+    steps:
+      - run:
+          name: Installing PyTorch
+          command: |
+            conda install pytorch -yc pytorch-nightly
+            conda install -y numpy scipy
+
+  install-cuda:
+    steps:
+      - run:
+          name: Installing CUDA
+          command: |
+            wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+            sudo dpkg -i cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+            sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
+            sudo apt-get update
+            sudo apt-get -y install cuda
+
+  build-csprng:
+    steps:
+      - run:
+          name: Building CSPRNG
+          command: python setup.py install
+
+  run-tests:
+    steps:
+      - run:
+          name: Running tests
+          command: python test_csprng.py
+
 jobs:
 
   build-nvcc:
@@ -22,25 +53,10 @@ jobs:
     steps:
       - checkout
       - install-conda
-      - run:
-          name: Installing PyTorch
-          command: |
-            conda install pytorch -yc pytorch-nightly
-            conda install -y numpy scipy
-      - run:
-          name: Installing CUDA
-          command: |
-            wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
-            sudo dpkg -i cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
-            sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
-            sudo apt-get update
-            sudo apt-get -y install cuda
-      - run:
-          name: Building CSPRNG
-          command: python setup.py install
-      - run:
-          name: Running tests
-          command: python test_csprng.py
+      - install-pytorch
+      - install-cuda
+      - build-csprng
+      - run-tests
 
   build-cc:
     machine:
@@ -49,17 +65,9 @@ jobs:
     steps:
       - checkout
       - install-conda
-      - run:
-          name: Installing PyTorch
-          command: |
-            conda install pytorch -yc pytorch-nightly
-            conda install -y numpy scipy
-      - run:
-          name: Building CSPRNG
-          command: python setup.py install
-      - run:
-          name: Running tests
-          command: python test_csprng.py
+      - install-pytorch
+      - build-csprng
+      - run-tests
 
 workflows:
   version: 2
