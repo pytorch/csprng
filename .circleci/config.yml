@@ -1,5 +1,6 @@
 version: 2.1
 jobs:
+
   build-nvcc:
     machine:
       image: ubuntu-1604:201903-01
@@ -33,6 +34,7 @@ jobs:
       - run:
           name: Running tests
           command: python test_csprng.py
+
   build-cc:
     machine:
       image: ubuntu-1604:201903-01
@@ -58,3 +60,10 @@ jobs:
       - run:
           name: Running tests
           command: python test_csprng.py
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build-nvcc
+      - build-cc
