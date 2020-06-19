@@ -1,5 +1,6 @@
 #pragma once
 
+#include "macros.h"
 #include <cstdint>
 
 namespace torch {
@@ -54,6 +55,13 @@ namespace aes {
     #define Nr 10       // The number of rounds in AES Cipher.
 #endif
 
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
+struct ulonglong2 // TODO: should have something like `__builtin_align__(16)`
+{
+  unsigned long long int x, y;
+};
+#endif
+
 typedef ulonglong2 block_t;
 constexpr size_t block_t_size = sizeof(block_t);
 
@@ -62,7 +70,7 @@ typedef uint8_t state_t[4][4];
 // The lookup-tables are marked const so they can be placed in read-only storage instead of RAM
 // The numbers below can be computed dynamically trading ROM for RAM - 
 // This can be useful in (embedded) bootloader applications, where ROM is often limited.
-__constant__ const uint8_t sbox[256] = {
+TORCH_CSPRNG_CONSTANT const uint8_t sbox[256] = {
   //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -83,13 +91,13 @@ __constant__ const uint8_t sbox[256] = {
 
 // The round constant word array, Rcon[i], contains the values given by 
 // x to the power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
-__constant__ const uint8_t Rcon[11] = {
+TORCH_CSPRNG_CONSTANT const uint8_t Rcon[11] = {
   0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 };
 
 #define getSBoxValue(num) (sbox[(num)])
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states. 
-__host__ __device__ void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key){
+TORCH_CSPRNG_HOST_DEVICE void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key){
   unsigned int i, j, k;
   uint8_t tempa[4]; // Used for the column/row operations
   
@@ -163,7 +171,7 @@ __host__ __device__ void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key){
 
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
-__host__ __device__ void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
+TORCH_CSPRNG_HOST_DEVICE void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
 {
   uint8_t i,j;
   for (i = 0; i < 4; ++i)
@@ -177,7 +185,7 @@ __host__ __device__ void AddRoundKey(uint8_t round, state_t* state, const uint8_
 
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
-__host__ __device__ void SubBytes(state_t* state)
+TORCH_CSPRNG_HOST_DEVICE void SubBytes(state_t* state)
 {
   uint8_t i, j;
   for (i = 0; i < 4; ++i)
@@ -192,7 +200,7 @@ __host__ __device__ void SubBytes(state_t* state)
 // The ShiftRows() function shifts the rows in the state to the left.
 // Each row is shifted with different offset.
 // Offset = Row number. So the first row is not shifted.
-__host__ __device__ void ShiftRows(state_t* state)
+TORCH_CSPRNG_HOST_DEVICE void ShiftRows(state_t* state)
 {
   uint8_t temp;
 
@@ -220,13 +228,13 @@ __host__ __device__ void ShiftRows(state_t* state)
   (*state)[1][3] = temp;
 }
 
-__host__ __device__ uint8_t xtime(uint8_t x)
+TORCH_CSPRNG_HOST_DEVICE uint8_t xtime(uint8_t x)
 {
   return ((x<<1) ^ (((x>>7) & 1) * 0x1b));
 }
 
 // MixColumns function mixes the columns of the state matrix
-__host__ __device__ void MixColumns(state_t* state)
+TORCH_CSPRNG_HOST_DEVICE void MixColumns(state_t* state)
 {
   uint8_t i;
   uint8_t Tmp, Tm, t;
@@ -241,7 +249,7 @@ __host__ __device__ void MixColumns(state_t* state)
   }
 }
 
-__host__ __device__ void encrypt(uint8_t* state, const uint8_t* key) {
+TORCH_CSPRNG_HOST_DEVICE void encrypt(uint8_t* state, const uint8_t* key) {
   uint8_t RoundKey[176];
   KeyExpansion(RoundKey, key); 
 
