@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  build:
+  build-nvcc:
     machine:
       image: ubuntu-1604:201903-01
     resource_class: gpu.small
@@ -27,6 +27,31 @@ jobs:
             sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
             sudo apt-get update
             sudo apt-get -y install cuda
+      - run:
+          name: Building CSPRNG
+          command: python setup.py install
+      - run:
+          name: Running tests
+          command: python test_csprng.py
+  build-cc:
+    machine:
+      image: ubuntu-1604:201903-01
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Installing Conda
+          command: |
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
+            export PATH=$HOME/conda/bin:$PATH
+            echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
+            conda install -y python=3
+      - run:
+          name: Installing PyTorch
+          command: |
+            conda install pytorch -yc pytorch-nightly
+            conda install -y numpy scipy
       - run:
           name: Building CSPRNG
           command: python setup.py install
