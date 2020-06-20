@@ -13,6 +13,12 @@
 #include <ATen/cuda/Exceptions.h>
 #endif
 
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#define UNROLL_IF_CUDA #pragma unroll
+#else
+#define UNROLL_IF_CUDA
+#endif
+
 namespace torch {
 namespace custom_prng {
 
@@ -24,7 +30,7 @@ at::Tensor key_tensor(c10::optional<at::Generator> generator, size_t block_t_siz
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
   auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  for (int i = 0; i < block_t_size; i++) {
+  for (size_t i = 0; i < block_t_size; i++) {
     t[i] = static_cast<uint8_t>(gen->random());
   }
   return t.to(device);
@@ -58,17 +64,17 @@ private:
 // `cipher`         is a callable that receives a counter `idx` and returns an encrypted block
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(int idx, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
-  const auto unroll_factor = block_t_size / sizeof(uint_t) / N;
+TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(int idx, scalar_t* data, int64_t numel, size_t block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+  const int unroll_factor = block_t_size / sizeof(uint_t) / N;
   if (unroll_factor * idx < numel) {
     auto block = cipher(idx);
-    #pragma unroll
+    UNROLL_IF_CUDA
     for (auto i = 0; i < unroll_factor; ++i) {
       const auto li = unroll_factor * idx + i;
       if (li < numel) {
         uint64_t vals[N];
-        #pragma unroll
-        for (auto j = 0; j < N; j++) {
+        UNROLL_IF_CUDA
+        for (size_t j = 0; j < N; j++) {
           vals[j] = (reinterpret_cast<uint_t*>(&block))[N * i + j];
         }
         RNGValues<N> rng(vals);
@@ -80,21 +86,21 @@ TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(int idx, scalar_
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-__global__ static void block_cipher_kernel_cuda(scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+__global__ static void block_cipher_kernel_cuda(scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
   const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
   block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
 }
 #endif
 
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
   for (auto idx = begin; idx < end; ++idx) {
     block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
   }
 }
 
 template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-static void block_cipher_kernel_cpu(int64_t total, scalar_t* data, int numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+static void block_cipher_kernel_cpu(int64_t total, scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
   if (total < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
     block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
   } else {
@@ -113,7 +119,7 @@ void block_cipher_ctr_mode(at::TensorIterator& iter, int block_t_size, cipher_t 
   if (numel == 0) {
     return;
   }
-  const auto unroll_factor = block_t_size / sizeof(uint_t) / N;
+  const int unroll_factor = block_t_size / sizeof(uint_t) / N;
   const auto block = 256;
   const auto grid = (numel + (block * unroll_factor) - 1) / (block * unroll_factor);
   scalar_t* data = (scalar_t*)iter.data_ptr(0);
