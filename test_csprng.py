@@ -4,6 +4,7 @@ from scipy import stats
 import numpy as np
 import math
 import random
+import time
 
 try:
     import torch_csprng as csprng
@@ -282,6 +283,23 @@ class TestCSPRNG(unittest.TestCase):
                                 for z in range(0, size):
                                     if not x1 <= x < x2 and not y1 <= y < y2 and not z1 <= z < z2:
                                         self.assertTrue(t[x, y, z] == 0)
+
+    @unittest.skipIf(torch.get_num_threads() < 2, "requires multithreading CPU")
+    def test_cpu_parallel(self):
+        urandom_gen = csprng.create_random_device_generator('/dev/urandom')
+
+        def measure(size):
+            t = torch.empty(size, dtype=torch.float32, device='cpu')
+            start = time.time()
+            for i in range(10):
+                t.normal_(generator=urandom_gen)
+            finish = time.time()
+            return finish - start
+
+        time_for_1K = measure(1000)
+        time_for_1M = measure(1000000)
+        # Pessimistic check that parallel execution gives >= 1.5 performance boost
+        self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
 
 if __name__ == '__main__':
     unittest.main()
