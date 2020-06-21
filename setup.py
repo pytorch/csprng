@@ -40,10 +40,11 @@ elif sha != 'Unknown':
     version += '+' + sha[:7]
 print("Building wheel {}-{}".format(package_name, version))
 
-version_path = os.path.join(this_dir, module_name, 'version.py')
-with open(version_path, 'w') as f:
-    f.write("__version__ = '{}'\n".format(version))
-    f.write("git_version = {}\n".format(repr(sha)))
+# Doesn't work yet :(
+# version_path = os.path.join(this_dir, module_name, 'version.py')
+# with open(version_path, 'w') as f:
+#     f.write("__version__ = '{}'\n".format(version))
+#     f.write("git_version = {}\n".format(repr(sha)))
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

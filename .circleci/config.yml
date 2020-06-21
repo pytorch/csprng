@@ -69,6 +69,20 @@ jobs:
       - build-csprng
       - run-tests
 
+  build-cc-pip:
+    machine:
+      image: ubuntu-1604:201903-01
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+        name: Checking versions
+        command: |
+          python --version
+          python3 --version
+          pip --version
+          pip3 --version
+
 workflows:
   version: 2
   build_and_test:
