@@ -76,12 +76,12 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Checking versions
-        command: |
-          python --version
-          python3 --version
-          pip --version
-          pip3 --version
+          name: Checking versions
+          command: |
+            python --version
+            python3 --version
+            pip --version
+            pip3 --version
 
 workflows:
   version: 2
