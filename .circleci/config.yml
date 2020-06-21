@@ -42,7 +42,7 @@ commands:
     steps:
       - run:
           name: Running tests
-          command: python test_csprng.py
+          command: python test/test_csprng.py
 
 jobs:
 
