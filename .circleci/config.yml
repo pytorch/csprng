@@ -89,3 +89,4 @@ workflows:
     jobs:
       - build-nvcc
       - build-cc
+      - build-pip
