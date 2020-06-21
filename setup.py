@@ -54,7 +54,7 @@ setup(
     version=version,
     author="Pavel Belevich",
     author_email="pbelevich@fb.com",
-    description="Cryptographically secure random number generator for PyTorch",
+    description="Cryptographically secure pseudorandom number generators for PyTorch",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license='BSD-3',
