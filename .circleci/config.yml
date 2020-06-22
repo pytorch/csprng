@@ -42,7 +42,7 @@ commands:
     steps:
       - run:
           name: Running tests
-          command: python test_csprng.py
+          command: python test/test_csprng.py
 
 jobs:
 
@@ -69,9 +69,29 @@ jobs:
       - build-csprng
       - run-tests
 
+  build-cc-pip:
+    machine:
+      image: ubuntu-1604:201903-01
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Setting Python 3 and upgrade pip
+          command: |
+            pyenv local 3.7.0
+            pip install -U pip
+      - run:
+          name: Installing PyTorch
+          command: |
+            pip install --pre torch -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html
+            pip install numpy scipy
+      - build-csprng
+      - run-tests
+
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build-nvcc
       - build-cc
+      - build-cc-pip

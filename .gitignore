@@ -1,5 +1,8 @@
 dist/
 build/
-pytorch_csprng.egg-info/
+*.egg-info/
 .idea
 .vscode
+torch_csprng/version.py
+*/__pycache__
+*.so
