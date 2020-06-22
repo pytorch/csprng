@@ -82,7 +82,7 @@ jobs:
             pip install -U pip
       - run:
           name: Installing PyTorch
-          command: pip install --pre torch -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
+          command: pip install --pre torch -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html
       - build-csprng
       - run-tests
 
