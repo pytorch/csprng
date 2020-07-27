@@ -20,7 +20,7 @@ Advantages:
 - One generator instance for both CPU and CUDA tensors(because the encryption key is always generated on CPU)
 - CPU random number generation is also parallel(unlike default PyTorch CPU generator)
 
-## Featues
+## Features
 
 CSPRNG exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
 
