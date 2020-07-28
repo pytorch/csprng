@@ -257,6 +257,67 @@ workflows:
           python_version: '3.8'
           wheel_docker_image: pytorch/manylinux-cuda102
 
+      - binary_linux_conda:
+          cu_version: cpu
+          name: binary_linux_conda_py3.6_cpu
+          python_version: '3.6'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_linux_conda:
+          cu_version: cu92
+          name: binary_linux_conda_py3.6_cu92
+          python_version: '3.6'
+          wheel_docker_image: pytorch/manylinux-cuda92
+      - binary_linux_conda:
+          cu_version: cu101
+          name: binary_linux_conda_py3.6_cu101
+          python_version: '3.6'
+          wheel_docker_image: pytorch/manylinux-cuda101
+      - binary_linux_conda:
+          cu_version: cu102
+          name: binary_linux_conda_py3.6_cu102
+          python_version: '3.6'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_linux_conda:
+          cu_version: cpu
+          name: binary_linux_conda_py3.7_cpu
+          python_version: '3.7'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_linux_conda:
+          cu_version: cu92
+          name: binary_linux_conda_py3.7_cu92
+          python_version: '3.7'
+          wheel_docker_image: pytorch/manylinux-cuda92
+      - binary_linux_conda:
+          cu_version: cu101
+          name: binary_linux_conda_py3.7_cu101
+          python_version: '3.7'
+          wheel_docker_image: pytorch/manylinux-cuda101
+      - binary_linux_conda:
+          cu_version: cu102
+          name: binary_linux_conda_py3.7_cu102
+          python_version: '3.7'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_linux_conda:
+          cu_version: cpu
+          name: binary_linux_conda_py3.8_cpu
+          python_version: '3.8'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_linux_conda:
+          cu_version: cu92
+          name: binary_linux_conda_py3.8_cu92
+          python_version: '3.8'
+          wheel_docker_image: pytorch/manylinux-cuda92
+      - binary_linux_conda:
+          cu_version: cu101
+          name: binary_linux_conda_py3.8_cu101
+          python_version: '3.8'
+          wheel_docker_image: pytorch/manylinux-cuda101
+      - binary_linux_conda:
+          cu_version: cu102
+          name: binary_linux_conda_py3.8_cu102
+          python_version: '3.8'
+          wheel_docker_image: pytorch/manylinux-cuda102
+
   unittest:
     jobs:
       - unittest_linux_cpu:

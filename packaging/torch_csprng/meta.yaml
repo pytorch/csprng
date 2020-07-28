@@ -1,0 +1,54 @@
+package:
+  name: torch_csprng
+  version: "{{ environ.get('BUILD_VERSION') }}"
+
+source:
+  path: "{{ environ.get('SOURCE_ROOT_DIR') }}"
+
+requirements:
+  build:
+    - {{ compiler('c') }} # [win]
+
+  host:
+    - python
+    - setuptools
+    {{ environ.get('CONDA_PYTORCH_BUILD_CONSTRAINT') }}
+    {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT') }}
+    {{ environ.get('CONDA_CPUONLY_FEATURE') }}
+
+  run:
+    - python
+    - pillow >=4.1.1
+    - numpy >=1.11
+    {{ environ.get('CONDA_PYTORCH_CONSTRAINT') }}
+    {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT') }}
+
+build:
+  string: py{{py}}_{{ environ['CU_VERSION'] }}
+  script: python setup.py install --single-version-externally-managed --record=record.txt # [not win]
+  script_env:
+    - CUDA_HOME
+    - FORCE_CUDA
+    - NVCC_FLAGS
+    - BUILD_VERSION
+  features:
+    {{ environ.get('CONDA_CPUONLY_FEATURE') }}
+
+test:
+  imports:
+    - torch_csprng
+  source_files:
+    - test
+  requires:
+    - pytest
+    - scipy
+    - av
+    - ca-certificates
+    {{ environ.get('CONDA_TYPING_CONSTRAINT') }}
+
+
+about:
+  home: https://github.com/pytorch/csprng
+  license: BSD
+  license_file: LICENSE
+  summary: 'Cryptographically secure pseudorandom number generators for PyTorch'
