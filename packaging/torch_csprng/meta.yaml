@@ -8,6 +8,7 @@ source:
 requirements:
   build:
     - {{ compiler('c') }} # [win]
+    - {{ compiler('cxx') }}
 
   host:
     - python
@@ -43,10 +44,6 @@ test:
   requires:
     - pytest
     - scipy
-    - av
-    - ca-certificates
-    {{ environ.get('CONDA_TYPING_CONSTRAINT') }}
-
 
 about:
   home: https://github.com/pytorch/csprng
