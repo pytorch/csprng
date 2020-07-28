@@ -14,7 +14,19 @@ else:
     build_cuda = cu_version != 'cpu'
 
 CXX_FLAGS = ['-fopenmp']
-NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
+NVCC_FLAGS = os.getenv('NVCC_FLAGS', '')
+if NVCC_FLAGS == '':
+    NVCC_FLAGS = []
+else:
+    NVCC_FLAGS = NVCC_FLAGS.split(' ')
+# TODO: replace with a loop:
+if '--expt-extended-lambda' not in NVCC_FLAGS:
+    NVCC_FLAGS.append('--expt-extended-lambda')
+if '-Xcompiler' not in NVCC_FLAGS:
+    NVCC_FLAGS.append('-Xcompiler')
+if '-fopenmp' not in NVCC_FLAGS:
+    NVCC_FLAGS.append('-fopenmp')
+# NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
 
 module_name = 'torch_csprng'
 
