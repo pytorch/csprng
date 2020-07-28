@@ -166,6 +166,33 @@ jobs:
       - store_test_results:
           path: build_results/
 
+  unittest_linux_cpu:
+    <<: *binary_common
+    docker:
+      - image: "pytorch/manylinux-cuda102"
+    resource_class: 2xlarge+
+    steps:
+      - checkout
+      - install-conda
+      - install-pytorch
+      - build-csprng
+      - run-tests
+
+  unittest_linux_gpu:
+    <<: *binary_common
+    machine:
+      image: ubuntu-1604-cuda-10.1:201909-23
+    resource_class: gpu.small
+    environment:
+      image_name: "pytorch/manylinux-cuda101"
+    steps:
+      - checkout
+      - install-conda
+      - install-pytorch
+      - install-cuda
+      - build-csprng
+      - run-tests
+
 workflows:
   build:
     jobs:
@@ -229,3 +256,40 @@ workflows:
           name: binary_linux_wheel_py3.8_cu102
           python_version: '3.8'
           wheel_docker_image: pytorch/manylinux-cuda102
+
+  unittest:
+    jobs:
+      - unittest_linux_cpu:
+          cu_version: cpu
+          name: unittest_linux_cpu_py3.6
+          python_version: '3.6'
+      - unittest_linux_cpu:
+          cu_version: cpu
+          name: unittest_linux_cpu_py3.7
+          python_version: '3.7'
+      - unittest_linux_cpu:
+          cu_version: cpu
+          name: unittest_linux_cpu_py3.8
+          python_version: '3.8'
+      - unittest_linux_gpu:
+          cu_version: cu101
+          filters:
+            branches:
+              only:
+                - master
+                - nightly
+          name: unittest_linux_gpu_py3.6
+          python_version: '3.6'
+      - unittest_linux_gpu:
+          cu_version: cu101
+          filters:
+            branches:
+              only:
+                - master
+                - nightly
+          name: unittest_linux_gpu_py3.7
+          python_version: '3.7'
+      - unittest_linux_gpu:
+          cu_version: cu101
+          name: unittest_linux_gpu_py3.8
+          python_version: '3.8'
