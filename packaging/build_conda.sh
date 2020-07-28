@@ -4,6 +4,8 @@ set -ex
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 . "$script_dir/pkg_helpers.bash"
 
+echo $CU_VERSION
+
 export BUILD_TYPE=conda
 setup_env 0.1.0
 export SOURCE_ROOT_DIR="$PWD"
