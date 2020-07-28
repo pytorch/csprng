@@ -4,8 +4,10 @@ from setuptools import setup
 from torch.utils import cpp_extension
 
 cu_version = os.getenv('CU_VERSION', default=None)
+print('CU_VERSION = ' + str(cu_version)) # REVERT!
 if cu_version is None:
     use_cuda = os.getenv('USE_CUDA', default=None)
+    print('USE_CUDA = ' + str(use_cuda)) # REVERT!
     if use_cuda is None:
         build_cuda = cpp_extension.CUDA_HOME is not None
     else:
