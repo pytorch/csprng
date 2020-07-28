@@ -3,7 +3,15 @@ import subprocess
 from setuptools import setup
 from torch.utils import cpp_extension
 
-build_cuda = cpp_extension.CUDA_HOME != None
+cu_version = os.getenv('CU_VERSION', default=None)
+if cu_version is None:
+    use_cuda = os.getenv('USE_CUDA', default=None)
+    if use_cuda is None:
+        build_cuda = cpp_extension.CUDA_HOME is not None
+    else:
+        build_cuda = use_cuda
+else:
+    build_cuda = cu_version != 'cpu'
 
 CXX_FLAGS = ['-fopenmp']
 NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
@@ -49,15 +57,15 @@ print("Building wheel {}-{}".format(package_name, version))
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-
+print('Building CUDA ' + str(build_cuda)) # REVERT!
 setup(
     name=package_name,
     version=version,
     author="Pavel Belevich",
     author_email="pbelevich@fb.com",
     description="Cryptographically secure pseudorandom number generators for PyTorch",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
+    # long_description=long_description,
+    # long_description_content_type="text/markdown",
     license='BSD-3',
     url="https://github.com/pytorch/csprng",
     classifiers=[
