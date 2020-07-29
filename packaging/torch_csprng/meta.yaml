@@ -36,17 +36,17 @@ build:
   features:
     {{ environ.get('CONDA_CPUONLY_FEATURE') }}
 
-test:
-  imports:
-    - torch
-    - torch_csprng
-  source_files:
-    - test
-  requires:
-    - pytest
-    - scipy
-  commands:
-    pytest . --verbose
+#test:
+#  imports:
+#    - torch
+#    - torch_csprng
+#  source_files:
+#    - test
+#  requires:
+#    - pytest
+#    - scipy
+#  commands:
+#    pytest . --verbose
 
 about:
   home: https://github.com/pytorch/csprng
