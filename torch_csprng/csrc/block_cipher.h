@@ -3,7 +3,7 @@
 #include "macros.h"
 #include <ATen/ATen.h>
 #include <ATen/native/TensorIterator.h>
-#include <ATen/cuda/detail/OffsetCalculator.cuh>
+#include "OffsetCalculator.cuh"
 #include <ATen/Parallel.h>
 #include <cstdint>
 #include <mutex>
