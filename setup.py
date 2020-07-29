@@ -1,4 +1,5 @@
 import os
+from sys import platform
 import subprocess
 from setuptools import setup
 from torch.utils import cpp_extension
@@ -13,7 +14,10 @@ if cu_version is None:
 else:
     build_cuda = cu_version != 'cpu'
 
-CXX_FLAGS = ['-fopenmp']
+CXX_FLAGS = []
+if platform != "darwin":
+    CXX_FLAGS.append('-fopenmp')
+
 NVCC_FLAGS = os.getenv('NVCC_FLAGS', '')
 if NVCC_FLAGS == '':
     NVCC_FLAGS = []
