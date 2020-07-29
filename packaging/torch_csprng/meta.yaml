@@ -38,12 +38,15 @@ build:
 
 test:
   imports:
+    - torch
     - torch_csprng
   source_files:
     - test
   requires:
     - pytest
     - scipy
+  commands:
+    pytest . --verbose
 
 about:
   home: https://github.com/pytorch/csprng
