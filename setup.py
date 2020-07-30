@@ -15,7 +15,7 @@ else:
     build_cuda = cu_version != 'cpu'
 
 CXX_FLAGS = []
-if platform != "darwin":
+if platform == 'linux':
     CXX_FLAGS.append('-fopenmp')
 
 NVCC_FLAGS = os.getenv('NVCC_FLAGS', '')
