@@ -512,33 +512,33 @@ workflows:
               only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
           name: binary_win_wheel_py3.6_cpu
           python_version: '3.6'
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.6_cu92
-          python_version: '3.6'
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.6_cu101
-          python_version: '3.6'
-      - binary_win_wheel:
-          cu_version: cu102
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.6_cu102
-          python_version: '3.6'
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.6_cu92
+#          python_version: '3.6'
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.6_cu101
+#          python_version: '3.6'
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.6_cu102
+#          python_version: '3.6'
       - binary_win_wheel:
           cu_version: cpu
           filters:
@@ -548,59 +548,59 @@ workflows:
               only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
           name: binary_win_wheel_py3.7_cpu
           python_version: '3.7'
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.7_cu92
-          python_version: '3.7'
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.7_cu101
-          python_version: '3.7'
-      - binary_win_wheel:
-          cu_version: cu102
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.7_cu102
-          python_version: '3.7'
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.7_cu92
+#          python_version: '3.7'
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.7_cu101
+#          python_version: '3.7'
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.7_cu102
+#          python_version: '3.7'
       - binary_win_wheel:
           cu_version: cpu
           name: binary_win_wheel_py3.8_cpu
           python_version: '3.8'
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.8_cu92
-          python_version: '3.8'
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: binary_win_wheel_py3.8_cu101
-          python_version: '3.8'
-      - binary_win_wheel:
-          cu_version: cu102
-          name: binary_win_wheel_py3.8_cu102
-          python_version: '3.8'
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.8_cu92
+#          python_version: '3.8'
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: master
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: binary_win_wheel_py3.8_cu101
+#          python_version: '3.8'
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          name: binary_win_wheel_py3.8_cu102
+#          python_version: '3.8'
       - binary_linux_conda:
           cu_version: cpu
           name: binary_linux_conda_py3.6_cpu
@@ -1189,66 +1189,66 @@ workflows:
           requires:
             - nightly_binary_win_wheel_py3.6_cpu
           subfolder: cpu/
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu92
-          python_version: '3.6'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu92_upload
-          requires:
-            - nightly_binary_win_wheel_py3.6_cu92
-          subfolder: cu92/
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu101
-          python_version: '3.6'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu101_upload
-          requires:
-            - nightly_binary_win_wheel_py3.6_cu101
-          subfolder: cu101/
-      - binary_win_wheel:
-          cu_version: cu102
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu102
-          python_version: '3.6'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.6_cu102_upload
-          requires:
-            - nightly_binary_win_wheel_py3.6_cu102
-          subfolder: cu102/
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu92
+#          python_version: '3.6'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu92_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.6_cu92
+#          subfolder: cu92/
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu101
+#          python_version: '3.6'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu101_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.6_cu101
+#          subfolder: cu101/
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu102
+#          python_version: '3.6'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.6_cu102_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.6_cu102
+#          subfolder: cu102/
       - binary_win_wheel:
           cu_version: cpu
           filters:
@@ -1269,66 +1269,66 @@ workflows:
           requires:
             - nightly_binary_win_wheel_py3.7_cpu
           subfolder: cpu/
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu92
-          python_version: '3.7'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu92_upload
-          requires:
-            - nightly_binary_win_wheel_py3.7_cu92
-          subfolder: cu92/
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu101
-          python_version: '3.7'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu101_upload
-          requires:
-            - nightly_binary_win_wheel_py3.7_cu101
-          subfolder: cu101/
-      - binary_win_wheel:
-          cu_version: cu102
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu102
-          python_version: '3.7'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.7_cu102_upload
-          requires:
-            - nightly_binary_win_wheel_py3.7_cu102
-          subfolder: cu102/
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu92
+#          python_version: '3.7'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu92_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.7_cu92
+#          subfolder: cu92/
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu101
+#          python_version: '3.7'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu101_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.7_cu101
+#          subfolder: cu101/
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu102
+#          python_version: '3.7'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.7_cu102_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.7_cu102
+#          subfolder: cu102/
       - binary_win_wheel:
           cu_version: cpu
           filters:
@@ -1349,66 +1349,66 @@ workflows:
           requires:
             - nightly_binary_win_wheel_py3.8_cpu
           subfolder: cpu/
-      - binary_win_wheel:
-          cu_version: cu92
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu92
-          python_version: '3.8'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu92_upload
-          requires:
-            - nightly_binary_win_wheel_py3.8_cu92
-          subfolder: cu92/
-      - binary_win_wheel:
-          cu_version: cu101
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu101
-          python_version: '3.8'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu101_upload
-          requires:
-            - nightly_binary_win_wheel_py3.8_cu101
-          subfolder: cu101/
-      - binary_win_wheel:
-          cu_version: cu102
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu102
-          python_version: '3.8'
-      - binary_wheel_upload:
-          context: org-member
-          filters:
-            branches:
-              only: nightly
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-          name: nightly_binary_win_wheel_py3.8_cu102_upload
-          requires:
-            - nightly_binary_win_wheel_py3.8_cu102
-          subfolder: cu102/
+#      - binary_win_wheel:
+#          cu_version: cu92
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu92
+#          python_version: '3.8'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu92_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.8_cu92
+#          subfolder: cu92/
+#      - binary_win_wheel:
+#          cu_version: cu101
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu101
+#          python_version: '3.8'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu101_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.8_cu101
+#          subfolder: cu101/
+#      - binary_win_wheel:
+#          cu_version: cu102
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu102
+#          python_version: '3.8'
+#      - binary_wheel_upload:
+#          context: org-member
+#          filters:
+#            branches:
+#              only: nightly
+#            tags:
+#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+#          name: nightly_binary_win_wheel_py3.8_cu102_upload
+#          requires:
+#            - nightly_binary_win_wheel_py3.8_cu102
+#          subfolder: cu102/
       - binary_linux_conda:
           cu_version: cpu
           filters:
