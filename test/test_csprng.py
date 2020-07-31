@@ -7,7 +7,7 @@ import random
 import time
 
 try:
-    import torch_csprng as csprng
+    import torchcsprng as csprng
 except ImportError:
     raise RuntimeError("CSPRNG not available")
 

@@ -144,11 +144,11 @@ if "%CUDA_VERSION%" == "cpu" (
 ::       pytorch-nightly==1.0.0.dev20180908
 ::   or in manylinux like
 ::       torch_nightly-1.0.0.dev20180908-cp27-cp27m-linux_x86_64.whl
-if "%TORCH_CSPRNG_BUILD_VERSION%" == "" set TORCH_CSPRNG_BUILD_VERSION=0.8.0.dev%NIGHTLIES_DATE_COMPACT%
+if "%TORCHCSPRNG_BUILD_VERSION%" == "" set TORCHCSPRNG_BUILD_VERSION=0.8.0.dev%NIGHTLIES_DATE_COMPACT%
 
 if "%~1" == "Wheels" (
     if not "%CUDA_VERSION%" == "102" (
-        set TORCH_CSPRNG_BUILD_VERSION=%TORCH_CSPRNG_BUILD_VERSION%+%_DESIRED_CUDA%
+        set TORCHCSPRNG_BUILD_VERSION=%TORCHCSPRNG_BUILD_VERSION%+%_DESIRED_CUDA%
     )
 )
 
@@ -159,24 +159,24 @@ if "%~1" == "Wheels" (
 ::   be set to '0' only if OVERRIDE_PACKAGE_VERSION is being used to bypass
 ::   all the version string logic in downstream scripts. Since we use the
 ::   override below, exporting this shouldn't actually matter.
-if "%TORCH_CSPRNG_BUILD_NUMBER%" == "" set /a TORCH_CSPRNG_BUILD_NUMBER=1
-if %TORCH_CSPRNG_BUILD_NUMBER% GTR 1 set TORCH_CSPRNG_BUILD_VERSION=%TORCH_CSPRNG_BUILD_VERSION%%TORCH_CSPRNG_BUILD_NUMBER%
+if "%TORCHCSPRNG_BUILD_NUMBER%" == "" set /a TORCHCSPRNG_BUILD_NUMBER=1
+if %TORCHCSPRNG_BUILD_NUMBER% GTR 1 set TORCHCSPRNG_BUILD_VERSION=%TORCHCSPRNG_BUILD_VERSION%%TORCHCSPRNG_BUILD_NUMBER%
 
 :: The nightly builds use their own versioning logic, so we override whatever
 :: logic is in setup.py or other scripts
 :: TODO: Not supported yet
-set OVERRIDE_PACKAGE_VERSION=%TORCH_CSPRNG_BUILD_VERSION%
-set BUILD_VERSION=%TORCH_CSPRNG_BUILD_VERSION%
+set OVERRIDE_PACKAGE_VERSION=%TORCHCSPRNG_BUILD_VERSION%
+set BUILD_VERSION=%TORCHCSPRNG_BUILD_VERSION%
 
 :: Build folder for conda builds to use
-if "%TORCH_CONDA_BUILD_FOLDER%" == "" set TORCH_CONDA_BUILD_FOLDER=torch_csprng
+if "%TORCH_CONDA_BUILD_FOLDER%" == "" set TORCH_CONDA_BUILD_FOLDER=torchcsprng
 
 :: TORCH_PACKAGE_NAME
 ::   The name of the package to upload. This should probably be pytorch or
 ::   pytorch-nightly. N.B. that pip will change all '-' to '_' but conda will
 ::   not. This is dealt with in downstream scripts.
 :: TODO: Not supported yet
-if "%TORCH_PACKAGE_NAME%" == "" set TORCH_PACKAGE_NAME=torch_csprng
+if "%TORCH_PACKAGE_NAME%" == "" set TORCH_PACKAGE_NAME=torchcsprng
 
 :: PIP_UPLOAD_FOLDER should end in a slash. This is to handle it being empty
 :: (when uploading to e.g. whl/cpu/) and also to handle nightlies (when

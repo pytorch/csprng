@@ -17,7 +17,7 @@ if ERRORLEVEL 1 exit /b 1
 
 if NOT "%BUILD_CSPRNG%" == "" (
     echo Smoke testing imports
-    python -c "import torch_csprng"
+    python -c "import torchcsprng"
     if ERRORLEVEL 1 exit /b 1
     goto smoke_test_end
 )

@@ -3,6 +3,6 @@ build/
 *.egg-info/
 .idea
 .vscode
-torch_csprng/version.py
+torchcsprng/version.py
 */__pycache__
 *.so
