@@ -1,5 +1,5 @@
 package:
-  name: torch_csprng
+  name: torchcsprng
   version: "{{ environ.get('BUILD_VERSION') }}"
 
 source:
@@ -39,7 +39,7 @@ build:
 #test:
 #  imports:
 #    - torch
-#    - torch_csprng
+#    - torchcsprng
 #  source_files:
 #    - test
 #  requires:

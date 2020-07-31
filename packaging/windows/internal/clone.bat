@@ -45,7 +45,7 @@ set PYTORCH_BRANCH=%last_commit%
 :latest_end
 
 IF "%PYTORCH_BRANCH%" == "" (
-    set PYTORCH_BRANCH=v%TORCH_CSPRNG_BUILD_VERSION%
+    set PYTORCH_BRANCH=v%TORCHCSPRNG_BUILD_VERSION%
 )
 git checkout %PYTORCH_BRANCH%
 IF ERRORLEVEL 1 git checkout tags/%PYTORCH_BRANCH%

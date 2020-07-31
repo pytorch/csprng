@@ -14,8 +14,8 @@
 #   PYTORCH_VERSION_SUFFIX (e.g., +cpu)
 #   WHEEL_DIR (e.g., cu100/)
 #   CUDA_HOME (e.g., /usr/local/cuda-9.2, respected by torch.utils.cpp_extension)
-#   FORCE_CUDA (respected by torch_csprng setup.py)
-#   NVCC_FLAGS (respected by torch_csprng setup.py)
+#   FORCE_CUDA (respected by torchcsprng setup.py)
+#   NVCC_FLAGS (respected by torchcsprng setup.py)
 #
 # Precondition: CUDA versions are installed in their conventional locations in
 # /usr/local/cuda-*
@@ -294,7 +294,7 @@ setup_visual_studio_constraint() {
   if [[ "$OSTYPE" == "msys" ]]; then
       export VSTOOLCHAIN_PACKAGE=vs$VC_YEAR
       conda build $CONDA_CHANNEL_FLAGS --no-anaconda-upload packaging/$VSTOOLCHAIN_PACKAGE
-      cp packaging/$VSTOOLCHAIN_PACKAGE/conda_build_config.yaml packaging/torch_csprng/conda_build_config.yaml
+      cp packaging/$VSTOOLCHAIN_PACKAGE/conda_build_config.yaml packaging/torchcsprng/conda_build_config.yaml
   fi
 }
 

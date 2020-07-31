@@ -51,7 +51,7 @@ Since CSPRNG is C++/CUDA extension it uses setuptools, just run `python setup.py
 
 ```python
 import torch
-import torch_csprng as csprng
+import torchcsprng as csprng
 
 # Create crypto-secure PRNG from /dev/urandom:
 urandom_gen = csprng.create_random_device_generator('/dev/urandom')
