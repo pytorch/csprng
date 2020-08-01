@@ -51,7 +51,7 @@ else:
 
 version = open('version.txt', 'r').read().strip()
 sha = 'Unknown'
-package_name = 'pytorch_csprng'
+package_name = 'torchcsprng'
 
 try:
     sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=this_dir).decode('ascii').strip()
