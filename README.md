@@ -24,10 +24,10 @@ Advantages:
 
 CSPRNG exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
 
-| Method to create PRNG                              | Is crypto-secure? | Has seed? | Underlying implementation                                                                                                          |
-|----------------------------------------------------|-------------------|-----------|------------------------------------------------------------------------------------------------------------------------------------|
-| create_random_device_generator(token: string=None) |         yes       |    no     | See [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) and [it's constructor](https://en.cppreference.com/w/cpp/numeric/random/random_device/random_device). The implementation in libstdc++ expects token to name the source of random bytes. Possible token values include "default", "rand_s", "rdseed", "rdrand", "rdrnd", "/dev/urandom", "/dev/random", "mt19937", and integer string specifying the seed of the mt19937 engine. (Token values other than "default" are only valid for certain targets.) If token=None then constructs a new std::random_device object with an implementation-defined token. |
-| create_mt19937_generator(seed: int=None)           |         no        |    yes    | See [std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) and [it's constructor](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine/mersenne_twister_engine). Constructs a mersenne_twister_engine object, and initializes its internal state sequence to pseudo-random values. If seed=None then seeds the engine with default_seed.|
+| Method to create PRNG                              | Is crypto-secure? | Has seed? | Underlying implementation |
+|----------------------------------------------------|-------------------|-----------|---------------------------|
+| create_random_device_generator(token: string=None) |         yes       |    no     | See [std::random_device](https://en.cppreference.com/w/cpp/numeric/random/random_device) and [its constructor](https://en.cppreference.com/w/cpp/numeric/random/random_device/random_device). The implementation in libstdc++ expects token to name the source of random bytes. Possible token values include "default", "rand_s", "rdseed", "rdrand", "rdrnd", "/dev/urandom", "/dev/random", "mt19937", and integer string specifying the seed of the mt19937 engine. (Token values other than "default" are only valid for certain targets.) If token=None then constructs a new std::random_device object with an implementation-defined token. |
+| create_mt19937_generator(seed: int=None)           |         no        |    yes    | See [std::mt19937](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine) and [its constructor](https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine/mersenne_twister_engine). Constructs a mersenne_twister_engine object, and initializes its internal state sequence to pseudo-random values. If seed=None then seeds the engine with default_seed.|
 
 The following list of methods supports all forementioned PRNGs:
 
@@ -43,67 +43,118 @@ The following list of methods supports all forementioned PRNGs:
 | geometric_(p)          | yes  | yes |
 | exponential_(lambda)   | yes  | yes |
 
-## How to build
+## Installation
 
-Since CSPRNG is C++/CUDA extension it uses setuptools, just run `python setup.py install` to build and install it.
+CSPRNG works on the following operating systems and can be used with PyTorch tensors on the following devices:
 
-## How to use
+| Tensor Device Type | Linux     | macOS         | MS Window |
+|--------------------|-----------|---------------|-----------|
+| CPU                | Supported | Supported     | Supported |
+| CUDA               | Supported | Not Supported | Planned*  |
 
+### Binaries
+
+Anaconda:
+
+```console
+conda install torchcsprng -c pytorch
+```
+for nightly builds:
+```console
+conda install torchcsprng -c pytorch-nightly
+```
+
+pip:
+
+```console
+pip install torchcsprng
+```
+for nightly builds:
+```console
+pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
+pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html
+pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html
+pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html
+```
+
+### From Source
+
+CSPRNG is a Python C++/CUDA extension that depends on PyTorch. In order to build CSPRNG from source it is required to have Python(>=3.6) with PyTorch(>=1.6.0) installed and C++ compiler(gcc/clang for Linux, XCode for macOS, Visual Studio for MS Windows).
+To build CSPRNG run the following:
+```console
+python setup.py install
+```
+By default, GPU support is built if CUDA is found and torch.cuda.is_available() is true. It's possible to force building GPU support by setting FORCE_CUDA=1 environment variable, which is useful when building a docker image.
+
+## Getting Started
+
+CSPRNG API is available in `torchcsprng` module:
 ```python
 import torch
 import torchcsprng as csprng
-
-# Create crypto-secure PRNG from /dev/urandom:
+```
+Create crypto-secure PRNG from /dev/urandom:
+```python
 urandom_gen = csprng.create_random_device_generator('/dev/urandom')
+```
 
-# Create empty boolean tensor on CUDA and initialize it with random values from urandom_gen:
-print(torch.empty(10, dtype=torch.bool, device='cuda').random_(generator=urandom_gen))
+Create empty boolean tensor on CUDA and initialize it with random values from urandom_gen:
+```python
+torch.empty(10, dtype=torch.bool, device='cuda').random_(generator=urandom_gen)
+```
+```
 tensor([ True, False, False,  True, False, False, False,  True, False, False],
        device='cuda:0')
+```
 
-# Create empty int16 tensor on CUDA and initialize it with random values in range [0, 100) from urandom_gen:
-print(torch.empty(10, dtype=torch.int16, device='cuda').random_(100, generator=urandom_gen))
+Create empty int16 tensor on CUDA and initialize it with random values in range [0, 100) from urandom_gen:
+```python
+torch.empty(10, dtype=torch.int16, device='cuda').random_(100, generator=urandom_gen)
+```
+```
 tensor([59, 20, 68, 51, 18, 37,  7, 54, 74, 85], device='cuda:0',
        dtype=torch.int16)
+```
 
-# Create non-crypto-secure MT19937 PRNG:
+Create non-crypto-secure MT19937 PRNG:
+```python
 mt19937_gen = csprng.create_mt19937_generator()
-
-print(torch.empty(10, dtype=torch.int64, device='cuda').random_(torch.iinfo(torch.int64).min, to=None, generator=mt19937_gen))
+torch.empty(10, dtype=torch.int64, device='cuda').random_(torch.iinfo(torch.int64).min, to=None, generator=mt19937_gen)
+```
+```
 tensor([-7584783661268263470,  2477984957619728163, -3472586837228887516,
         -5174704429717287072,  4125764479102447192, -4763846282056057972,
          -182922600982469112,  -498242863868415842,   728545841957750221,
          7740902737283645074], device='cuda:0')
+```
 
-# Create crypto-secure PRNG from default random device:
+Create crypto-secure PRNG from default random device:
+```python
 default_device_gen = csprng.create_random_device_generator()
-
-print(torch.randn(10, device='cuda', generator=default_device_gen))
+torch.randn(10, device='cuda', generator=default_device_gen)
+```
+```
 tensor([ 1.2885,  0.3240, -1.1813,  0.8629,  0.5714,  2.3720, -0.5627, -0.5551,
         -0.6304,  0.1090], device='cuda:0')
-
-# Create non-crypto-secure MT19937 PRNG with seed
-mt19937_gen = csprng.create_mt19937_generator(42)
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([ 1.,  1.,  1.,  6.,  1., 13.,  5.,  1.,  3.,  4.], device='cuda:0')
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([14.,  5.,  4.,  5.,  1.,  1.,  8.,  1.,  7., 10.], device='cuda:0')
-
-# Recreate MT19937 PRNG with the same seed
-mt19937_gen = csprng.create_mt19937_generator(42)
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([ 1.,  1.,  1.,  6.,  1., 13.,  5.,  1.,  3.,  4.], device='cuda:0')
-
-print(torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen))
-tensor([14.,  5.,  4.,  5.,  1.,  1.,  8.,  1.,  7., 10.], device='cuda:0')
-
 ```
+
+Create non-crypto-secure MT19937 PRNG with seed:
+```python
+mt19937_gen = csprng.create_mt19937_generator(42)
+torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen)
+```
+```
+tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
+```
+
+Recreate MT19937 PRNG with the same seed:
+```python
+mt19937_gen = csprng.create_mt19937_generator(42)
+torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen)
+```
+```
+tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
+```
+## License
+
+CSPRNG is BSD-licensed.
