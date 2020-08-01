@@ -32,7 +32,7 @@ if '-fopenmp' not in NVCC_FLAGS:
     NVCC_FLAGS.append('-fopenmp')
 # NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
 
-module_name = 'torch_csprng'
+module_name = 'torchcsprng'
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 extensions_dir = os.path.join(this_dir, module_name, 'csrc')
@@ -51,7 +51,7 @@ else:
 
 version = open('version.txt', 'r').read().strip()
 sha = 'Unknown'
-package_name = 'pytorch_csprng'
+package_name = 'torchcsprng'
 
 try:
     sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=this_dir).decode('ascii').strip()

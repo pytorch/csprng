@@ -8,5 +8,5 @@ if errorlevel 1 exit /b 1
 call packaging/windows/internal/nightly_defaults.bat Wheels
 if errorlevel 1 exit /b 1
 
-call packaging/windows/build_csprng.bat %CUDA_VERSION% %TORCH_CSPRNG_BUILD_VERSION% %TORCH_CSPRNG_BUILD_NUMBER%
+call packaging/windows/build_csprng.bat %CUDA_VERSION% %TORCHCSPRNG_BUILD_VERSION% %TORCHCSPRNG_BUILD_NUMBER%
 if errorlevel 1 exit /b 1
