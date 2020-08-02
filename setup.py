@@ -1,7 +1,7 @@
 import os
 from sys import platform
 import subprocess
-from setuptools import setup, find_packages
+from setuptools import setup
 import torch
 from torch.utils import cpp_extension
 
@@ -87,7 +87,6 @@ setup(
     license='BSD-3',
 
     # Package info
-    # packages=find_packages(exclude=('test',)), # doesn't work
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
