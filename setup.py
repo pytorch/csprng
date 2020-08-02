@@ -2,9 +2,10 @@ import os
 from sys import platform
 import subprocess
 from setuptools import setup, find_packages
+import torch
 from torch.utils import cpp_extension
 
-build_cuda = cpp_extension.CUDA_HOME is not None or os.getenv('FORCE_CUDA', '0') == '1'
+build_cuda = torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1'
 
 CXX_FLAGS = os.getenv('CXX_FLAGS', '')
 if CXX_FLAGS == '':
