@@ -1,0 +1,9 @@
+parameters:
+  msagent: false
+
+steps:
+- script: 'call packaging/windows/build_csprng.bat %CUDA_VERSION% %TORCHCSPRNG_BUILD_VERSION% %TORCHCSPRNG_BUILD_NUMBER%'
+  displayName: Build
+  env:
+    ${{ if eq(parameters.msagent, 'true') }}:
+      MAX_JOBS: 2

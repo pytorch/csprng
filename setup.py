@@ -2,19 +2,16 @@ import os
 from sys import platform
 import subprocess
 from setuptools import setup
+import torch
 from torch.utils import cpp_extension
 
-cu_version = os.getenv('CU_VERSION', default=None)
-if cu_version is None:
-    use_cuda = os.getenv('USE_CUDA', default=None)
-    if use_cuda is None:
-        build_cuda = cpp_extension.CUDA_HOME is not None
-    else:
-        build_cuda = use_cuda
-else:
-    build_cuda = cu_version != 'cpu'
+build_cuda = torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1'
 
-CXX_FLAGS = []
+CXX_FLAGS = os.getenv('CXX_FLAGS', '')
+if CXX_FLAGS == '':
+    CXX_FLAGS = []
+else:
+    CXX_FLAGS = CXX_FLAGS.split(' ')
 if platform == 'linux':
     CXX_FLAGS.append('-fopenmp')
 
@@ -23,14 +20,10 @@ if NVCC_FLAGS == '':
     NVCC_FLAGS = []
 else:
     NVCC_FLAGS = NVCC_FLAGS.split(' ')
-# TODO: replace with a loop:
-if '--expt-extended-lambda' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('--expt-extended-lambda')
-if '-Xcompiler' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('-Xcompiler')
-if '-fopenmp' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('-fopenmp')
-# NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
+
+for flag in ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']:
+    if not flag in NVCC_FLAGS:
+        NVCC_FLAGS.append(flag)
 
 module_name = 'torchcsprng'
 
@@ -73,22 +66,46 @@ print("Building wheel {}-{}".format(package_name, version))
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+pytorch_dep = 'torch'
+if os.getenv('PYTORCH_VERSION'):
+    pytorch_dep += "==" + os.getenv('PYTORCH_VERSION')
+
+requirements = [
+    pytorch_dep,
+]
+
 setup(
+    # Metadata
     name=package_name,
     version=version,
     author="Pavel Belevich",
     author_email="pbelevich@fb.com",
-    description="Cryptographically secure pseudorandom number generators for PyTorch",
-    # long_description=long_description,
-    # long_description_content_type="text/markdown",
-    license='BSD-3',
     url="https://github.com/pytorch/csprng",
+    description="Cryptographically secure pseudorandom number generators for PyTorch",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    license='BSD-3',
+
+    # Package info
     classifiers=[
-        "Programming Language :: Python :: 3",
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     python_requires='>=3.6',
+    install_requires=requirements,
     ext_modules=[csprng_ext],
-    cmdclass={'build_ext': cpp_extension.BuildExtension})
+    cmdclass={'build_ext': cpp_extension.BuildExtension}
+)
