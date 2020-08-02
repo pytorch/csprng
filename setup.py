@@ -4,17 +4,13 @@ import subprocess
 from setuptools import setup, find_packages
 from torch.utils import cpp_extension
 
-cu_version = os.getenv('CU_VERSION', default=None)
-if cu_version is None:
-    use_cuda = os.getenv('USE_CUDA', default=None)
-    if use_cuda is None:
-        build_cuda = cpp_extension.CUDA_HOME is not None
-    else:
-        build_cuda = use_cuda
-else:
-    build_cuda = cu_version != 'cpu'
+build_cuda = cpp_extension.CUDA_HOME is not None or os.getenv('FORCE_CUDA', '0') == '1'
 
-CXX_FLAGS = []
+CXX_FLAGS = os.getenv('CXX_FLAGS', '')
+if CXX_FLAGS == '':
+    CXX_FLAGS = []
+else:
+    CXX_FLAGS = CXX_FLAGS.split(' ')
 if platform == 'linux':
     CXX_FLAGS.append('-fopenmp')
 
@@ -23,14 +19,10 @@ if NVCC_FLAGS == '':
     NVCC_FLAGS = []
 else:
     NVCC_FLAGS = NVCC_FLAGS.split(' ')
-# TODO: replace with a loop:
-if '--expt-extended-lambda' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('--expt-extended-lambda')
-if '-Xcompiler' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('-Xcompiler')
-if '-fopenmp' not in NVCC_FLAGS:
-    NVCC_FLAGS.append('-fopenmp')
-# NVCC_FLAGS = ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']
+
+for flag in ['--expt-extended-lambda', '-Xcompiler', '-fopenmp']:
+    if not flag in NVCC_FLAGS:
+        NVCC_FLAGS.append(flag)
 
 module_name = 'torchcsprng'
 
@@ -94,7 +86,7 @@ setup(
     license='BSD-3',
 
     # Package info
-    # packages=find_packages(exclude=('test',)),
+    # packages=find_packages(exclude=('test',)), # doesn't work
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
