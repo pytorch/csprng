@@ -1,7 +1,7 @@
 import os
 from sys import platform
 import subprocess
-from setuptools import setup
+from setuptools import setup, find_packages
 from torch.utils import cpp_extension
 
 cu_version = os.getenv('CU_VERSION', default=None)
@@ -73,22 +73,47 @@ print("Building wheel {}-{}".format(package_name, version))
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+pytorch_dep = 'torch'
+if os.getenv('PYTORCH_VERSION'):
+    pytorch_dep += "==" + os.getenv('PYTORCH_VERSION')
+
+requirements = [
+    pytorch_dep,
+]
+
 setup(
+    # Metadata
     name=package_name,
     version=version,
     author="Pavel Belevich",
     author_email="pbelevich@fb.com",
-    description="Cryptographically secure pseudorandom number generators for PyTorch",
-    # long_description=long_description,
-    # long_description_content_type="text/markdown",
-    license='BSD-3',
     url="https://github.com/pytorch/csprng",
+    description="Cryptographically secure pseudorandom number generators for PyTorch",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    license='BSD-3',
+
+    # Package info
+    packages=find_packages(exclude=('test',)),
     classifiers=[
-        "Programming Language :: Python :: 3",
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     python_requires='>=3.6',
+    install_requires=requirements,
     ext_modules=[csprng_ext],
-    cmdclass={'build_ext': cpp_extension.BuildExtension})
+    cmdclass={'build_ext': cpp_extension.BuildExtension}
+)
