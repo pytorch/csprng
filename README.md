@@ -50,7 +50,7 @@ CSPRNG works with Python 3.6/3.7/3.8 on the following operating systems and can 
 | Tensor Device Type | Linux     | macOS         | MS Window      |
 |--------------------|-----------|---------------|----------------| 
 | CPU                | Supported | Supported     | Supported      |
-| CUDA               | Supported | Not Supported | November 2020  |
+| CUDA               | Supported | Not Supported | Coming  |
 
 ### Binaries
 
