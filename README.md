@@ -16,7 +16,7 @@ It makes CSPRNG both crypto-secure and parallel on CUDA and CPU.
 
 Advantages:
 
-- A user can choose either seed-based(for testing) or random device based(fully crypto-secure) generators
+- The user can choose either seed-based(for testing) or random device based(fully crypto-secure) generators
 - One generator instance for both CPU and CUDA tensors(because the encryption key is always generated on CPU)
 - CPU random number generation is also parallel(unlike default PyTorch CPU generator)
 
@@ -45,12 +45,12 @@ The following list of methods supports all forementioned PRNGs:
 
 ## Installation
 
-CSPRNG works on the following operating systems and can be used with PyTorch tensors on the following devices:
+CSPRNG works with Python 3.6/3.7/3.8 on the following operating systems and can be used with PyTorch tensors on the following devices:
 
-| Tensor Device Type | Linux     | macOS         | MS Window |
-|--------------------|-----------|---------------|-----------|
-| CPU                | Supported | Supported     | Supported |
-| CUDA               | Supported | Not Supported | Planned*  |
+| Tensor Device Type | Linux     | macOS         | MS Window      |
+|--------------------|-----------|---------------|----------------| 
+| CPU                | Supported | Supported     | Supported      |
+| CUDA               | Supported | Not Supported | November 2020  |
 
 ### Binaries
 
@@ -59,23 +59,28 @@ Anaconda:
 ```console
 conda install torchcsprng -c pytorch
 ```
-for nightly builds:
-```console
-conda install torchcsprng -c pytorch-nightly
-```
 
 pip:
 
 ```console
 pip install torchcsprng
 ```
-for nightly builds:
-```console
-pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
-pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html
-pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html
-pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html
-```
+
+Nightly builds:
+
+Anaconda:
+
+| OS                     | CUDA                                          |                                                       |
+|------------------------|-----------------------------------------------|-------------------------------------------------------|
+| Linux                  | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | conda install torchcsprng -c pytorch-nightly         |
+| macOS<br/><br/>Windows | None<br><br>None                              | conda install torchcsprng -c pytorch-nightly<br/><br/>conda install torchcsprng cpuonly -c pytorch-nightly         |
+
+pip:
+
+| OS                     | CUDA                                          |                                                                                                    |
+|------------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Linux                  | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html |
+| macOS<br/><br/>Windows | None<br><br>None                              | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html   |
 
 ### From Source
 
