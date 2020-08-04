@@ -160,6 +160,12 @@ torch.empty(10, device='cuda').geometric_(p=0.2, generator=mt19937_gen)
 ```
 tensor([ 7.,  1.,  8.,  1., 11.,  3.,  1.,  1.,  5., 10.], device='cuda:0')
 ```
+
+## Contributing
+We appreciate all contributions. If you are planning to contribute back bug-fixes, please do so without any further discussion. If you plan to contribute new features, utility functions or extensions, please first open an issue and discuss the feature with us.
+
+
+
 ## License
 
 CSPRNG is BSD-licensed.
