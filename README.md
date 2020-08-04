@@ -1,16 +1,16 @@
 # PyTorch/CSPRNG
 
-CSPRNG is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/cpp_extension.html) that provides [cryptographically secure pseudorandom number generators](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) for PyTorch.
+torchcsprng is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/cpp_extension.html) that provides [cryptographically secure pseudorandom number generators](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) for PyTorch.
 
 [![CircleCI](https://circleci.com/gh/pytorch/csprng.svg?style=shield&circle-token=64701692dd7f13f31019612289f0200fdb661dc2)](https://circleci.com/gh/pytorch/csprng)
 
 ## Design
 
-CSPRNG generates a random 128-bits key on CPU using one of its generators and runs
+torchcsprng generates a random 128-bit key on CPU using one of its generators and runs
 [AES128](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CTR mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
-mode either on CPU or on GPU using CUDA to generate random 128 bits state and apply transformation function to map it to target tensor values.
+mode either on CPU or on GPU using CUDA to generate a random 128 bit state and apply a transformation function to map it to target tensor values.
 This approach is based on [Parallel Random Numbers: As Easy as 1, 2, 3(John K. Salmon, Mark A. Moraes, Ron O. Dror, and David E. Shaw, D. E. Shaw Research)](http://www.thesalmons.org/john/random123/papers/random123sc11.pdf).
-It makes CSPRNG both crypto-secure and parallel on CUDA and CPU.
+It makes torchcsprng both crypto-secure and parallel on CUDA and CPU.
 
 ![CSPRNG architecture](.github/csprng_architecture.png)
 
@@ -18,11 +18,11 @@ Advantages:
 
 - The user can choose either seed-based(for testing) or random device based(fully crypto-secure) generators
 - One generator instance for both CPU and CUDA tensors(because the encryption key is always generated on CPU)
-- CPU random number generation is also parallel(unlike default PyTorch CPU generator)
+- CPU random number generation is also parallel(unlike default the PyTorch CPU generator)
 
 ## Features
 
-CSPRNG exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
+torchcsprng exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
 
 | Method to create PRNG                              | Is crypto-secure? | Has seed? | Underlying implementation |
 |----------------------------------------------------|-------------------|-----------|---------------------------|
@@ -52,7 +52,7 @@ CSPRNG works with Python 3.6/3.7/3.8 on the following operating systems and can 
 | CPU                | Supported | Supported     | Supported      |
 | CUDA               | Supported | Not Supported | Coming  |
 
-### Binaries
+### Binary Installation
 
 Anaconda:
 
@@ -84,16 +84,16 @@ pip:
 
 ### From Source
 
-CSPRNG is a Python C++/CUDA extension that depends on PyTorch. In order to build CSPRNG from source it is required to have Python(>=3.6) with PyTorch(>=1.6.0) installed and C++ compiler(gcc/clang for Linux, XCode for macOS, Visual Studio for MS Windows).
-To build CSPRNG run the following:
+torchcsprng is a Python C++/CUDA extension that depends on PyTorch. In order to build CSPRNG from source it is required to have Python(>=3.6) with PyTorch(>=1.6.0) installed and C++ compiler(gcc/clang for Linux, XCode for macOS, Visual Studio for MS Windows).
+To build torchcsprng you can run the following:
 ```console
 python setup.py install
 ```
-By default, GPU support is built if CUDA is found and torch.cuda.is_available() is true. It's possible to force building GPU support by setting FORCE_CUDA=1 environment variable, which is useful when building a docker image.
+By default, GPU support is built if CUDA is found and torch.cuda.is_available() is True. Additionally, it is possible to force building GPU support by setting the FORCE_CUDA=1 environment variable, which is useful when building a docker image.
 
 ## Getting Started
 
-CSPRNG API is available in `torchcsprng` module:
+The torchcsprng API is available in `torchcsprng` module:
 ```python
 import torch
 import torchcsprng as csprng
@@ -168,4 +168,4 @@ We appreciate all contributions. If you are planning to contribute back bug-fixe
 
 ## License
 
-CSPRNG is BSD-licensed.
+torchcsprng is BSD 3-clause licensed. See the license file [here](https://github.com/pytorch/csprng/blob/master/LICENSE)
