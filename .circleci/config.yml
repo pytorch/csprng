@@ -72,11 +72,11 @@ commands:
             sudo apt-get update
             sudo apt-get -y install cuda
 
-  build-csprng:
+  build-csprng-develop:
     steps:
       - run:
           name: Building CSPRNG
-          command: python setup.py install
+          command: python setup.py develop
 
   run-tests:
     steps:
@@ -117,48 +117,6 @@ binary_common: &binary_common
     CU_VERSION: << parameters.cu_version >>
 
 jobs:
-
-  build-nvcc:
-    machine:
-      image: ubuntu-1604:201903-01
-    resource_class: gpu.small
-    steps:
-      - checkout
-      - install-conda
-      - install-pytorch
-      - install-cuda
-      - build-csprng
-      - run-tests
-
-  build-cc:
-    machine:
-      image: ubuntu-1604:201903-01
-    resource_class: large
-    steps:
-      - checkout
-      - install-conda
-      - install-pytorch
-      - build-csprng
-      - run-tests
-
-  build-cc-pip:
-    machine:
-      image: ubuntu-1604:201903-01
-    resource_class: large
-    steps:
-      - checkout
-      - run:
-          name: Setting Python 3 and upgrade pip
-          command: |
-            pyenv local 3.7.0
-            pip install -U pip
-      - run:
-          name: Installing PyTorch
-          command: |
-            pip install --pre torch -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html
-            pip install numpy scipy
-      - build-csprng
-      - run-tests
 
   binary_linux_wheel:
     <<: *binary_common
@@ -330,7 +288,7 @@ jobs:
       - checkout
       - install-conda
       - install-pytorch
-      - build-csprng
+      - build-csprng-develop
       - run-tests
 
   unittest_linux_gpu:
@@ -345,7 +303,7 @@ jobs:
       - install-conda
       - install-pytorch
       - install-cuda
-      - build-csprng
+      - build-csprng-develop
       - run-tests
 
 #  unittest_windows_cpu:
