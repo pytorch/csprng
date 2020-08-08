@@ -32,13 +32,13 @@ extensions_dir = os.path.join(this_dir, module_name, 'csrc')
 
 if build_cuda:
     csprng_ext = cpp_extension.CUDAExtension(
-        module_name, [os.path.join(extensions_dir, 'csprng.cu')],
+        module_name + '._C', [os.path.join(extensions_dir, 'csprng.cu')],
         extra_compile_args={'cxx': [],
                             'nvcc': NVCC_FLAGS}
     )
 else:
     csprng_ext = cpp_extension.CppExtension(
-        module_name, [os.path.join(extensions_dir, 'csprng.cpp')],
+        module_name + '._C', [os.path.join(extensions_dir, 'csprng.cpp')],
         extra_compile_args={'cxx': CXX_FLAGS}
     )
 
@@ -57,11 +57,10 @@ elif sha != 'Unknown':
     version += '+' + sha[:7]
 print("Building wheel {}-{}".format(package_name, version))
 
-# Doesn't work yet :(
-# version_path = os.path.join(this_dir, module_name, 'version.py')
-# with open(version_path, 'w') as f:
-#     f.write("__version__ = '{}'\n".format(version))
-#     f.write("git_version = {}\n".format(repr(sha)))
+version_path = os.path.join(this_dir, module_name, 'version.py')
+with open(version_path, 'w') as f:
+    f.write("__version__ = '{}'\n".format(version))
+    f.write("git_version = {}\n".format(repr(sha)))
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
