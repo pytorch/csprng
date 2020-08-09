@@ -61,6 +61,8 @@ def get_extensions():
 
     extensions_dir = os.path.join(cwd, module_name, 'csrc')
 
+    openmp = 'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
+
     if build_cuda:
         sources = [os.path.join(extensions_dir, 'csprng.cu')]
         extension = CUDAExtension
@@ -84,7 +86,7 @@ def get_extensions():
             cxx_flags = []
         else:
             cxx_flags = cxx_flags.split(' ')
-        if sys.platform == 'linux':
+        if sys.platform == 'linux' and openmp:
             for flag in ['-fopenmp']:
                 if not flag in cxx_flags:
                     cxx_flags.append(flag)
