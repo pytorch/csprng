@@ -1,8 +1,10 @@
+.idea
+.vscode
+# do not change or delete this comment - `python setup.py clean` deletes everything after this line
 dist/
 build/
 *.egg-info/
-.idea
-.vscode
 torchcsprng/version.py
 */__pycache__
+.pytest_cache
 *.so
