@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from setuptools import setup, find_packages
 import distutils.command.clean
@@ -79,13 +80,14 @@ def get_extensions():
         sources = [os.path.join(extensions_dir, 'csprng.cpp')]
         extension = CppExtension
         cxx_flags = os.getenv('CXX_FLAGS', '')
-        if cxx_flags == '-fopenmp':
+        if cxx_flags == '':
             cxx_flags = []
         else:
             cxx_flags = cxx_flags.split(' ')
-        for flag in ['']:
-            if not flag in cxx_flags:
-                cxx_flags.append(flag)
+        if sys.platform == 'linux':
+            for flag in ['-fopenmp']:
+                if not flag in cxx_flags:
+                    cxx_flags.append(flag)
         extra_compile_args = {
             'cxx': cxx_flags
         }
