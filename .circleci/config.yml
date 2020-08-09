@@ -82,7 +82,7 @@ commands:
     steps:
       - run:
           name: Running tests
-          command: python test/test_csprng.py
+          command: python setup.py test
 
 binary_common: &binary_common
   parameters:
