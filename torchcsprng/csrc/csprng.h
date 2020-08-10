@@ -29,10 +29,12 @@ inline uint64_t make64BitsFrom32Bits(uint32_t hi, uint32_t lo) {
 struct CustomGeneratorImpl : public c10::GeneratorImpl {
   CustomGeneratorImpl(bool use_rd)              : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{use_rd} {}
   CustomGeneratorImpl(const std::string& token) : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{true}, rd_{token} {}
-  CustomGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} { }
+  CustomGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} {}
+  CustomGeneratorImpl(Tensor key)               : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, key_(key) {}
   ~CustomGeneratorImpl() = default;
   uint32_t random() { return use_rd_ ? rd_() : mt_(); }
   uint64_t random64() { return use_rd_ ? make64BitsFrom32Bits(rd_(), rd_()) : make64BitsFrom32Bits(mt_(), mt_()); }
+  Tensor& key() { return key_; };
 
   void set_current_seed(uint64_t seed) override { throw std::runtime_error("not implemented"); }
   uint64_t current_seed() const override { throw std::runtime_error("not implemented"); }
@@ -44,6 +46,7 @@ struct CustomGeneratorImpl : public c10::GeneratorImpl {
   bool use_rd_;
   std::random_device rd_;
   std::mt19937 mt_;
+  Tensor key_;
 };
 
 uint32_t random32(Generator generator) {
@@ -58,7 +61,7 @@ uint64_t random64(Generator generator) {
   return gen->random64();
 }
 
-Tensor& fill_random_key_tensor(Tensor& t, Generator generator) {
+Tensor fill_random_key_tensor(Tensor& t, Generator generator) {
   return _fill_random_key_tensor<CustomGeneratorImpl>(t, generator);
 }
 
@@ -368,6 +371,10 @@ Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) 
   }
 }
 
+Generator create_const_generator(Tensor key) {
+  return make_generator<CustomGeneratorImpl>(key);
+}
+
 bool supports_cuda() {
 #if defined(__CUDACC__) || defined(__HIPCC__)
   return true;
@@ -408,4 +415,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("random", &random32);
   m.def("random64", &random64);
   m.def("fill_random_key_tensor", &fill_random_key_tensor);
+  m.def("create_const_generator", &create_const_generator);
 }

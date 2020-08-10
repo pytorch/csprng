@@ -27,7 +27,12 @@ namespace custom_prng {
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`
 // and passes it to the `device`.
 template<typename RNG>
-at::Tensor& _fill_random_key_tensor(Tensor& t, at::Generator generator) {
+at::Tensor _fill_random_key_tensor(Tensor& t, at::Generator generator) {
+  auto gen = at::check_generator<RNG>(generator);
+  if (gen->key().defined()) {
+    return gen->key().clone();
+  }
+
   TORCH_CHECK(t.is_contiguous(), "key_tensor must be contiguous");
   const auto scalarType = t.scalar_type();
   TORCH_CHECK(isIntegralType(scalarType, /*includeBool=*/true), "key_tensor must be integral");
@@ -38,7 +43,6 @@ at::Tensor& _fill_random_key_tensor(Tensor& t, at::Generator generator) {
     using random_t = uint32_t;
     TORCH_CHECK(sizeof(random_t) == 4);
     random_t mask = static_cast<random_t>((static_cast<uint64_t>(1) << (8 * elem_size)) - static_cast<uint64_t>(1));
-    TORCH_CHECK((std::is_same<random_t, decltype(mask)>::value));
     const auto random_size = sizeof(random_t) / elem_size;
 
     std::lock_guard<std::mutex> lock(generator.mutex());
@@ -59,7 +63,6 @@ at::Tensor& _fill_random_key_tensor(Tensor& t, at::Generator generator) {
     using random_t = uint64_t;
     TORCH_CHECK(sizeof(random_t) == 8);
     random_t mask = 0xffffffffffffffffUL;
-    TORCH_CHECK((std::is_same<random_t, decltype(mask)>::value));
     const auto random_size = sizeof(random_t) / elem_size;
 
     std::lock_guard<std::mutex> lock(generator.mutex());
@@ -77,15 +80,20 @@ at::Tensor& _fill_random_key_tensor(Tensor& t, at::Generator generator) {
       }
     }
   } else {
-    throw std::runtime_error("_fill_random_key_tensor does supports only integral dtypes less then or equal to 8 bytes");
+    TORCH_CHECK(false, "_fill_random_key_tensor does supports only integral dtypes less then or equal to 8 bytes");
   }
   return t;
 }
 
 template<typename RNG>
 at::Tensor _random_key_tensor(size_t size, ScalarType scalar_type, at::Device device, at::Generator generator) {
-  auto t = torch::empty({static_cast<signed long>(size)}, torch::TensorOptions(scalar_type).device(device));
-  return _fill_random_key_tensor<RNG>(t, generator);
+  auto gen = at::check_generator<RNG>(generator);
+  if (gen->key().defined()) {
+    return gen->key().clone();
+  }
+
+  auto t = torch::empty({static_cast<signed long>(size)}, torch::TensorOptions(scalar_type));
+  return _fill_random_key_tensor<RNG>(t, generator).to(device);
 }
 
 uint8_t* raw_uint8_t_pointer(const Tensor& t) {

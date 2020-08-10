@@ -319,17 +319,28 @@ class TestCSPRNG(unittest.TestCase):
                     s.add(csprng.random64(gen))
                 self.assertEqual(len(s), size)
 
-    def test_fill_random_key_tensor(self):
+    def test_random_key_tensor(self):
         size = 10
         for device in self.all_devices:
             for gen in self.all_generators:
                 for dtype in self.int_dtypes:
                     s = set()
                     for _ in range(0, size):
-                        t = torch.zeros(8, dtype=dtype, device=device)
-                        csprng.fill_random_key_tensor(t, gen)
+                        t = csprng.random_key_tensor(8, dtype, device, gen)
                         s.add(str(t))
                     self.assertEqual(len(s), size)
+
+    def test_const_generator(self):
+        size = 10
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                for dtype in self.int_dtypes:
+                    key = csprng.random_key_tensor(16, dtype, device, gen)
+                    const_gen = csprng.create_const_generator(key)
+                    first = csprng.random_key_tensor(16, dtype, device, const_gen)
+                    second = csprng.random_key_tensor(16, dtype, device, const_gen)
+                    self.assertTrue((first - second).max().abs() == 0)
+
 
 if __name__ == '__main__':
     unittest.main()
