@@ -2,6 +2,7 @@
 
 #include "macros.h"
 #include <ATen/ATen.h>
+#include <ATen/Dispatch.h>
 #include <ATen/native/TensorIterator.h>
 #include "OffsetCalculator.cuh"
 #include <ATen/Parallel.h>
@@ -26,14 +27,74 @@ namespace custom_prng {
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`
 // and passes it to the `device`.
 template<typename RNG>
-at::Tensor key_tensor(c10::optional<at::Generator> generator, size_t block_t_size, at::Device device) {
-  std::lock_guard<std::mutex> lock(generator->mutex());
-  auto gen = at::check_generator<RNG>(generator);
-  auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  for (size_t i = 0; i < block_t_size; i++) {
-    t[i] = static_cast<uint8_t>(gen->random());
+at::Tensor& _fill_random_key_tensor(Tensor& t, at::Generator generator) {
+  TORCH_CHECK(t.is_contiguous(), "key_tensor must be contiguous");
+  const auto scalarType = t.scalar_type();
+  TORCH_CHECK(isIntegralType(scalarType, /*includeBool=*/true), "key_tensor must be integral");
+  const auto elem_size = elementSize(scalarType);
+  const auto tensor_size = t.numel();
+
+  if (elem_size <= 4) {
+    using random_t = uint32_t;
+    TORCH_CHECK(sizeof(random_t) == 4);
+    random_t mask = static_cast<random_t>((static_cast<uint64_t>(1) << (8 * elem_size)) - static_cast<uint64_t>(1));
+    TORCH_CHECK((std::is_same<random_t, decltype(mask)>::value));
+    const auto random_size = sizeof(random_t) / elem_size;
+
+    std::lock_guard<std::mutex> lock(generator.mutex());
+    auto gen = at::check_generator<RNG>(generator);
+
+    for (size_t i = 0; i < (tensor_size + random_size - 1) / random_size; ++i) {
+      random_t random = gen->random();
+      for (size_t j = 0; j < random_size; ++j) {
+        int k = i * random_size + j;
+        if (k < tensor_size) {
+          AT_DISPATCH_INTEGRAL_TYPES(scalarType, "key_tensor_assign", [&]() {
+            t[k] = static_cast<scalar_t>((random >> (j * elem_size)) & mask);
+          });
+        }
+      }
+    }
+  } else if (elem_size == 8) {
+    using random_t = uint64_t;
+    TORCH_CHECK(sizeof(random_t) == 8);
+    random_t mask = 0xffffffffffffffffUL;
+    TORCH_CHECK((std::is_same<random_t, decltype(mask)>::value));
+    const auto random_size = sizeof(random_t) / elem_size;
+
+    std::lock_guard<std::mutex> lock(generator.mutex());
+    auto gen = at::check_generator<RNG>(generator);
+
+    for (size_t i = 0; i < (tensor_size + random_size - 1) / random_size; ++i) {
+      random_t random = gen->random();
+      for (size_t j = 0; j < random_size; ++j) {
+        int k = i * random_size + j;
+        if (k < tensor_size) {
+          AT_DISPATCH_INTEGRAL_TYPES(scalarType, "key_tensor_assign", [&]() {
+            t[k] = static_cast<scalar_t>((random >> (j * elem_size)) & mask);
+          });
+        }
+      }
+    }
+  } else {
+    throw std::runtime_error("_fill_random_key_tensor does supports only integral dtypes less then or equal to 8 bytes");
   }
-  return t.to(device);
+  return t;
+}
+
+template<typename RNG>
+at::Tensor _random_key_tensor(size_t size, ScalarType scalar_type, at::Device device, at::Generator generator) {
+  auto t = torch::empty({static_cast<signed long>(size)}, torch::TensorOptions(scalar_type).device(device));
+  return _fill_random_key_tensor<RNG>(t, generator);
+}
+
+uint8_t* raw_uint8_t_pointer(const Tensor& t) {
+  TORCH_CHECK(t.is_contiguous(), "key_tensor must be contiguous");
+  const auto scalarType = t.scalar_type();
+  TORCH_CHECK(isIntegralType(scalarType, /*includeBool=*/true), "key_tensor must be integral");
+  return AT_DISPATCH_INTEGRAL_TYPES(scalarType, "raw", [&]() {
+    return reinterpret_cast<uint8_t*>(t.data_ptr<scalar_t>());
+  });
 }
 
 // A simple container for random state sub-blocks that implements RNG interface 

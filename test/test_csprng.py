@@ -301,5 +301,35 @@ class TestCSPRNG(unittest.TestCase):
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
         self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
 
+    def test_random(self):
+        size = 100
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                s = set()
+                for _ in range(0, size):
+                    s.add(csprng.random(gen))
+                self.assertEqual(len(s), size)
+
+    def test_random64(self):
+        size = 100
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                s = set()
+                for _ in range(0, size):
+                    s.add(csprng.random64(gen))
+                self.assertEqual(len(s), size)
+
+    def test_fill_random_key_tensor(self):
+        size = 10
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                for dtype in self.int_dtypes:
+                    s = set()
+                    for _ in range(0, size):
+                        t = torch.zeros(8, dtype=dtype, device=device)
+                        csprng.fill_random_key_tensor(t, gen)
+                        s.add(str(t))
+                    self.assertEqual(len(s), size)
+
 if __name__ == '__main__':
     unittest.main()
