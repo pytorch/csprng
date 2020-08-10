@@ -33,6 +33,7 @@ at::Tensor _fill_random_key_tensor(Tensor& t, at::Generator generator) {
     return gen->key().clone();
   }
 
+  TORCH_CHECK(t.device().type() == torch::kCPU);
   TORCH_CHECK(t.is_contiguous(), "key_tensor must be contiguous");
   const auto scalarType = t.scalar_type();
   TORCH_CHECK(isIntegralType(scalarType, /*includeBool=*/true), "key_tensor must be integral");
@@ -92,7 +93,7 @@ at::Tensor _random_key_tensor(size_t size, ScalarType scalar_type, at::Device de
     return gen->key().clone();
   }
 
-  auto t = torch::empty({static_cast<signed long>(size)}, torch::TensorOptions(scalar_type));
+  auto t = torch::empty({static_cast<signed long>(size)}, torch::TensorOptions(scalar_type).device(torch::kCPU));
   return _fill_random_key_tensor<RNG>(t, generator).to(device);
 }
 
