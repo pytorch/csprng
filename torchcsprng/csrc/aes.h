@@ -4,7 +4,7 @@
 #include <cstdint>
 
 namespace torch {
-namespace custom_prng {
+namespace csprng {
 namespace aes {
 
 // This AES implementation is based on
