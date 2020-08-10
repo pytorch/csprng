@@ -20,7 +20,7 @@
 #endif
 
 namespace torch {
-namespace custom_prng {
+namespace csprng {
 
 // Generates `block_t_size`-bytes random key Tensor on CPU 
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`

@@ -19,25 +19,25 @@
 
 using namespace at;
 using namespace at::native::templates;
-using namespace torch::custom_prng;
+using namespace torch::csprng;
 
 inline uint64_t make64BitsFrom32Bits(uint32_t hi, uint32_t lo) {
   return (static_cast<uint64_t>(hi) << 32) | lo;
 }
 
 // CUDA CSPRNG is actually CPU generator which is used only to generate a random key on CPU for AES running in a block mode on CUDA 
-struct CustomGeneratorImpl : public c10::GeneratorImpl {
-  CustomGeneratorImpl(bool use_rd)              : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{use_rd} {}
-  CustomGeneratorImpl(const std::string& token) : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{true}, rd_{token} {}
-  CustomGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} { }
-  ~CustomGeneratorImpl() = default;
+struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
+  CSPRNGGeneratorImpl(bool use_rd)              : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{use_rd} {}
+  CSPRNGGeneratorImpl(const std::string& token) : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{true}, rd_{token} {}
+  CSPRNGGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} { }
+  ~CSPRNGGeneratorImpl() = default;
   uint32_t random() { return use_rd_ ? rd_() : mt_(); }
   uint64_t random64() { return use_rd_ ? make64BitsFrom32Bits(rd_(), rd_()) : make64BitsFrom32Bits(mt_(), mt_()); }
 
   void set_current_seed(uint64_t seed) override { throw std::runtime_error("not implemented"); }
   uint64_t current_seed() const override { throw std::runtime_error("not implemented"); }
   uint64_t seed() override { throw std::runtime_error("not implemented"); }
-  CustomGeneratorImpl* clone_impl() const override { throw std::runtime_error("not implemented"); }
+  CSPRNGGeneratorImpl* clone_impl() const override { throw std::runtime_error("not implemented"); }
 
   static DeviceType device_type() { return DeviceType::CPU; }
 
@@ -161,11 +161,11 @@ struct RandomFromToKernel {
 };
 
 Tensor& random_(Tensor& self, c10::optional<Generator> generator) {
-  return random_impl<RandomKernel, CustomGeneratorImpl>(self, generator);
+  return random_impl<RandomKernel, CSPRNGGeneratorImpl>(self, generator);
 }
 
 Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to, c10::optional<Generator> generator) {
-  return random_from_to_impl<RandomFromToKernel, CustomGeneratorImpl>(self, from, to, generator);
+  return random_from_to_impl<RandomFromToKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
 Tensor& random_to(Tensor& self, int64_t to, c10::optional<Generator> generator) {
@@ -191,7 +191,7 @@ struct UniformKernel {
 };
 
 Tensor& uniform_(Tensor& self, double from, double to, c10::optional<Generator> generator) {
-  return uniform_impl_<UniformKernel, CustomGeneratorImpl>(self, from, to, generator);
+  return uniform_impl_<UniformKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
 // ==================================================== Normal ========================================================
@@ -214,31 +214,31 @@ struct NormalKernel {
 };
 
 Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> generator) {
-  return normal_impl_<NormalKernel, CustomGeneratorImpl>(self, mean, std, generator);
+  return normal_impl_<NormalKernel, CSPRNGGeneratorImpl>(self, mean, std, generator);
 }
 
 Tensor& normal_Tensor_float_out(Tensor& output, const Tensor& mean, double std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CustomGeneratorImpl>(output, mean, std, gen);
+  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
 Tensor& normal_float_Tensor_out(Tensor& output, double mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CustomGeneratorImpl>(output, mean, std, gen);
+  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
 Tensor& normal_Tensor_Tensor_out(Tensor& output, const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CustomGeneratorImpl>(output, mean, std, gen);
+  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
 Tensor normal_Tensor_float(const Tensor& mean, double std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CustomGeneratorImpl>(mean, std, gen);
+  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
 Tensor normal_float_Tensor(double mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CustomGeneratorImpl>(mean, std, gen);
+  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
 Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CustomGeneratorImpl>(mean, std, gen);
+  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
 // ==================================================== Cauchy ========================================================
@@ -260,7 +260,7 @@ struct CauchyKernel {
 };
 
 Tensor& cauchy_(Tensor& self, double median, double sigma, c10::optional<Generator> generator) {
-  return cauchy_impl_<CauchyKernel, CustomGeneratorImpl>(self, median, sigma, generator);
+  return cauchy_impl_<CauchyKernel, CSPRNGGeneratorImpl>(self, median, sigma, generator);
 }
 
 // ================================================== LogNormal =======================================================
@@ -282,7 +282,7 @@ struct LogNormalKernel {
 };
 
 Tensor& log_normal_(Tensor& self, double mean, double std, c10::optional<Generator> gen) {
-  return log_normal_impl_<LogNormalKernel, CustomGeneratorImpl>(self, mean, std, gen);
+  return log_normal_impl_<LogNormalKernel, CSPRNGGeneratorImpl>(self, mean, std, gen);
 }
 
 // ================================================== Geometric =======================================================
@@ -304,7 +304,7 @@ struct GeometricKernel {
 };
 
 Tensor& geometric_(Tensor& self, double p, c10::optional<Generator> gen) {
-  return geometric_impl_<GeometricKernel, CustomGeneratorImpl>(self, p, gen);
+  return geometric_impl_<GeometricKernel, CSPRNGGeneratorImpl>(self, p, gen);
 }
 
 // ================================================== Exponential =====================================================
@@ -326,24 +326,24 @@ struct ExponentialKernel {
 };
 
 Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) {
-  return exponential_impl_<ExponentialKernel, CustomGeneratorImpl>(self, lambda, gen);
+  return exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
 }
 
 // ====================================================================================================================
 
 Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
   if (token.has_value()) {
-    return make_generator<CustomGeneratorImpl>(*token);
+    return make_generator<CSPRNGGeneratorImpl>(*token);
   } else {
-    return make_generator<CustomGeneratorImpl>(true);
+    return make_generator<CSPRNGGeneratorImpl>(true);
   }
 }
 
 Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) {
   if (seed.has_value()) {
-    return make_generator<CustomGeneratorImpl>(*seed);
+    return make_generator<CSPRNGGeneratorImpl>(*seed);
   } else {
-    return make_generator<CustomGeneratorImpl>(false);
+    return make_generator<CSPRNGGeneratorImpl>(false);
   }
 }
 
