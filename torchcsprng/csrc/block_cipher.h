@@ -26,14 +26,20 @@ namespace csprng {
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`
 // and passes it to the `device`.
 template<typename RNG>
-at::Tensor key_tensor(c10::optional<at::Generator> generator, size_t block_t_size, at::Device device) {
+at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
   auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  for (size_t i = 0; i < block_t_size; i++) {
-    t[i] = static_cast<uint8_t>(gen->random());
+  using random_t = uint32_t;
+  constexpr size_t random_t_size = sizeof(random_t);
+  for (size_t i = 0; i < block_t_size / random_t_size; i++) {
+    const auto rand = gen->random();
+    for (size_t j = 0; j < random_t_size; j++) {
+      size_t k = i * random_t_size + j;
+      t[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
+    }
   }
-  return t.to(device);
+  return t;
 }
 
 // A simple container for random state sub-blocks that implements RNG interface 
