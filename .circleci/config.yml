@@ -42,48 +42,6 @@ commands:
             fi
             echo "export UPLOAD_CHANNEL=${our_upload_channel}" >> ${BASH_ENV}
 
-  install-conda:
-    steps:
-      - run:
-          name: Installing Conda
-          command: |
-            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-            bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
-            export PATH=$HOME/conda/bin:$PATH
-            echo 'export PATH=$HOME/conda/bin:$PATH' >> $BASH_ENV
-            conda install -y python=3
-
-  install-pytorch:
-    steps:
-      - run:
-          name: Installing PyTorch
-          command: |
-            conda install pytorch -yc pytorch-nightly
-            conda install -y numpy scipy
-
-  install-cuda:
-    steps:
-      - run:
-          name: Installing CUDA
-          command: |
-            wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
-            sudo dpkg -i cuda-repo-ubuntu1604-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
-            sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
-            sudo apt-get update
-            sudo apt-get -y install cuda
-
-  build-csprng-develop:
-    steps:
-      - run:
-          name: Building CSPRNG
-          command: python setup.py develop
-
-  run-tests:
-    steps:
-      - run:
-          name: Running tests
-          command: python setup.py test
-
 binary_common: &binary_common
   parameters:
     # Edit these defaults to do a release`
@@ -279,6 +237,7 @@ jobs:
             for pkg in ~/workspace/*.whl; do
               aws s3 cp "$pkg" "s3://pytorch/whl/${UPLOAD_CHANNEL}/<< parameters.subfolder >>" --acl public-read
             done
+
   unittest_linux_cpu:
     <<: *binary_common
     docker:
@@ -286,10 +245,36 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout
-      - install-conda
-      - install-pytorch
-      - build-csprng-develop
-      - run-tests
+      - run:
+          name: Generate cache key
+          # This will refresh cache on Sundays, nightly build should generate new cache.
+          command: echo "$(date +"%Y-%U")" > .circleci-weekly
+      - restore_cache:
+
+          keys:
+            - env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+      - run:
+          name: Setup
+          command: .circleci/unittest/linux/scripts/setup_env.sh
+      - save_cache:
+
+          key: env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+          paths:
+            - conda
+            - env
+      - run:
+          name: Install torchcsprng
+          command: .circleci/unittest/linux/scripts/install.sh
+      - run:
+          name: Run tests
+          command: .circleci/unittest/linux/scripts/run_test.sh
+      - run:
+          name: Post process
+          command: .circleci/unittest/linux/scripts/post_process.sh
+      - store_test_results:
+          path: test-results
 
   unittest_linux_gpu:
     <<: *binary_common
@@ -300,87 +285,112 @@ jobs:
       image_name: "pytorch/manylinux-cuda101"
     steps:
       - checkout
-      - install-conda
-      - install-pytorch
-      - install-cuda
-      - build-csprng-develop
-      - run-tests
+      - run:
+          name: Generate cache key
+          # This will refresh cache on Sundays, nightly build should generate new cache.
+          command: echo "$(date +"%Y-%U")" > .circleci-weekly
+      - restore_cache:
 
-#  unittest_windows_cpu:
-#    <<: *binary_common
-#    executor:
-#      name: windows-cpu
-#    steps:
-#      - checkout
-#      - run:
-#          name: Generate cache key
-#          # This will refresh cache on Sundays, nightly build should generate new cache.
-#          command: echo "$(date +"%Y-%U")" > .circleci-weekly
-#      - restore_cache:
-#
-#          keys:
-#            - env-v2-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
-#
-#      - run:
-#          name: Setup
-#          command: .circleci/unittest/windows/scripts/setup_env.sh
-#      - save_cache:
-#
-#          key: env-v2-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
-#
-#          paths:
-#            - conda
-#            - env
-#      - run:
-#          name: Install torchvision
-#          command: .circleci/unittest/windows/scripts/install.sh
-#      - run:
-#          name: Run tests
-#          command: .circleci/unittest/windows/scripts/run_test.sh
-#      - run:
-#          name: Post process
-#          command: .circleci/unittest/windows/scripts/post_process.sh
-#      - store_test_results:
-#          path: test-results
-#
-#  unittest_windows_gpu:
-#    <<: *binary_common
-#    executor:
-#      name: windows-gpu
-#    environment:
-#      CUDA_VERSION: "10.1"
-#    steps:
-#      - checkout
-#      - run:
-#          name: Generate cache key
-#          # This will refresh cache on Sundays, nightly build should generate new cache.
-#          command: echo "$(date +"%Y-%U")" > .circleci-weekly
-#      - restore_cache:
-#
-#          keys:
-#            - env-v1-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
-#
-#      - run:
-#          name: Setup
-#          command: .circleci/unittest/windows/scripts/setup_env.sh
-#      - save_cache:
-#
-#          key: env-v1-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
-#
-#          paths:
-#            - conda
-#            - env
-#      - run:
-#          name: Install torchvision
-#          command: .circleci/unittest/windows/scripts/install.sh
-#      - run:
-#          name: Run tests
-#          command: .circleci/unittest/windows/scripts/run_test.sh
-#      - run:
-#          name: Post process
-#          command: .circleci/unittest/windows/scripts/post_process.sh
-#      - store_test_results:
-#          path: test-results
+          keys:
+            - env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+      - run:
+          name: Setup
+          command: docker run -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/setup_env.sh
+      - save_cache:
+
+          key: env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+          paths:
+            - conda
+            - env
+      - run:
+          name: Install torchcsprng
+          command: docker run -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/install.sh
+      - run:
+          name: Run tests
+          command: docker run -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/run_test.sh
+      - run:
+          name: Post Process
+          command: docker run -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/post_process.sh
+      - store_test_results:
+          path: test-results
+
+  unittest_windows_cpu:
+    <<: *binary_common
+    executor:
+      name: windows-cpu
+    steps:
+      - checkout
+      - run:
+          name: Generate cache key
+          # This will refresh cache on Sundays, nightly build should generate new cache.
+          command: echo "$(date +"%Y-%U")" > .circleci-weekly
+      - restore_cache:
+
+          keys:
+            - env-v2-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+      - run:
+          name: Setup
+          command: .circleci/unittest/windows/scripts/setup_env.sh
+      - save_cache:
+
+          key: env-v2-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+          paths:
+            - conda
+            - env
+      - run:
+          name: Install torchcsprng
+          command: .circleci/unittest/windows/scripts/install.sh
+      - run:
+          name: Run tests
+          command: .circleci/unittest/windows/scripts/run_test.sh
+      - run:
+          name: Post process
+          command: .circleci/unittest/windows/scripts/post_process.sh
+      - store_test_results:
+          path: test-results
+
+  unittest_windows_gpu:
+    <<: *binary_common
+    executor:
+      name: windows-gpu
+    environment:
+      CUDA_VERSION: "10.1"
+    steps:
+      - checkout
+      - run:
+          name: Generate cache key
+          # This will refresh cache on Sundays, nightly build should generate new cache.
+          command: echo "$(date +"%Y-%U")" > .circleci-weekly
+      - restore_cache:
+
+          keys:
+            - env-v1-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+      - run:
+          name: Setup
+          command: .circleci/unittest/windows/scripts/setup_env.sh
+      - save_cache:
+
+          key: env-v1-windows-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/windows/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
+
+          paths:
+            - conda
+            - env
+      - run:
+          name: Install torchcsprng
+          command: .circleci/unittest/windows/scripts/install.sh
+      - run:
+          name: Run tests
+          command: .circleci/unittest/windows/scripts/run_test.sh
+      - run:
+          name: Post process
+          command: .circleci/unittest/windows/scripts/post_process.sh
+      - store_test_results:
+          path: test-results
 
 workflows:
   build:
@@ -772,18 +782,18 @@ workflows:
           cu_version: cu101
           name: unittest_linux_gpu_py3.8
           python_version: '3.8'
-#      - unittest_windows_cpu:
-#          cu_version: cpu
-#          name: unittest_windows_cpu_py3.6
-#          python_version: '3.6'
-#      - unittest_windows_cpu:
-#          cu_version: cpu
-#          name: unittest_windows_cpu_py3.7
-#          python_version: '3.7'
-#      - unittest_windows_cpu:
-#          cu_version: cpu
-#          name: unittest_windows_cpu_py3.8
-#          python_version: '3.8'
+      - unittest_windows_cpu:
+          cu_version: cpu
+          name: unittest_windows_cpu_py3.6
+          python_version: '3.6'
+      - unittest_windows_cpu:
+          cu_version: cpu
+          name: unittest_windows_cpu_py3.7
+          python_version: '3.7'
+      - unittest_windows_cpu:
+          cu_version: cpu
+          name: unittest_windows_cpu_py3.8
+          python_version: '3.8'
 #      - unittest_windows_gpu:
 #          cu_version: cu101
 #          filters:
