@@ -3,5 +3,3 @@ channels:
 dependencies:
   - numpy
   - scipy
-  - pytest
-  - ca-certificates
