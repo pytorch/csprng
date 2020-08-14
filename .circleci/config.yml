@@ -265,7 +265,7 @@ jobs:
             - conda
             - env
       - run:
-          name: Install torchvision
+          name: Install torchcsprng
           command: .circleci/unittest/linux/scripts/install.sh
       - run:
           name: Run tests
@@ -305,7 +305,7 @@ jobs:
             - conda
             - env
       - run:
-          name: Install torchvision
+          name: Install torchcsprng
           command: docker run -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/install.sh
       - run:
           name: Run tests
