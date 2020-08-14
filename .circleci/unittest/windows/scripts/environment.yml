@@ -4,4 +4,4 @@ dependencies:
   - numpy
   - scipy
   - pytest
-
+  - ca-certificates
