@@ -1,0 +1,7 @@
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - scipy
+  - pytest
+
