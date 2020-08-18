@@ -8,7 +8,7 @@ torchcsprng is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/adva
 
 torchcsprng generates a random 128-bit key on CPU using one of its generators and runs
 [AES128](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CTR mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
-mode either on CPU or on GPU using CUDA to generate a random 128 bit state and apply a transformation function to map it to target tensor values.
+ either on CPU or on GPU using CUDA to generate a random 128 bit state and apply a transformation function to map it to target tensor values.
 This approach is based on [Parallel Random Numbers: As Easy as 1, 2, 3(John K. Salmon, Mark A. Moraes, Ron O. Dror, and David E. Shaw, D. E. Shaw Research)](http://www.thesalmons.org/john/random123/papers/random123sc11.pdf).
 It makes torchcsprng both crypto-secure and parallel on CUDA and CPU.
 
