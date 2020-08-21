@@ -301,5 +301,10 @@ class TestCSPRNG(unittest.TestCase):
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
         self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
 
+    def test_version(self):
+        import torchcsprng.version as version
+        self.assertTrue(version.__version__)
+        self.assertTrue(version.git_version)
+
 if __name__ == '__main__':
     unittest.main()
