@@ -78,12 +78,12 @@ def get_extensions():
             nvcc_flags = []
         else:
             nvcc_flags = nvcc_flags.split(' ')
-        nvcc_flags = append_flags(nvcc_flags, ['--expt-extended-lambda'])
+        nvcc_flags = append_flags(nvcc_flags, ['--expt-extended-lambda', '-Xcompiler'])
         if openmp:
             if sys.platform == 'linux':
-                nvcc_flags = append_flags(nvcc_flags, ['-Xcompiler', '-fopenmp'])
+                nvcc_flags = append_flags(nvcc_flags, ['-fopenmp'])
             elif sys.platform == 'win32':
-                nvcc_flags = append_flags(nvcc_flags, ['-Xcompiler', '/openmp'])
+                nvcc_flags = append_flags(nvcc_flags, ['/openmp'])
         extra_compile_args = {
             'cxx': [],
             'nvcc': nvcc_flags,
