@@ -58,6 +58,7 @@ Anaconda:
 
 ```console
 conda install torchcsprng -c pytorch
+# For Windows: conda install torchcsprng cpuonly -c pytorch
 ```
 
 pip:
