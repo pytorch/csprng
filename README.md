@@ -70,7 +70,7 @@ pip:
 | macOS   | None                                          | pip install torchcsprng                                                       |
 | Windows | None                                          | pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html |
 
-Nightly builds:
+### Nightly builds:
 
 Anaconda:
 
