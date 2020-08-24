@@ -82,10 +82,11 @@ Anaconda:
 
 pip:
 
-| OS                     | CUDA                                          |                                                                                                    |
-|------------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------|
-| Linux                  | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html |
-| macOS<br/><br/>Windows | None<br><br>None                              | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html   |
+| OS      | CUDA                                          |                                                                                                    |
+|---------|-----------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu92/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cu102/torch_nightly.html <br/><br/> pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html |
+| macOS   | None                                          | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html   |
+| Windows | None                                          | pip install --pre torchcsprng -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html   |
 
 ### From Source
 
