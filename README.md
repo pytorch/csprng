@@ -65,6 +65,7 @@ pip:
 
 ```console
 pip install torchcsprng
+# For Windows: pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 Nightly builds:
