@@ -307,7 +307,6 @@ class TestCSPRNG(unittest.TestCase):
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
         self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
 
-    @unittest.skip("Temporary disable because doesn't work on Sandcastle")
     def test_version(self):
         import torchcsprng.version as version
         self.assertTrue(version.__version__)
