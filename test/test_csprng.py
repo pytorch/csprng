@@ -325,7 +325,7 @@ class TestCSPRNG(unittest.TestCase):
                         actual_out = torch.empty(1, dtype=dtype, device=device)
                         torch.randperm(size, out=actual_out, generator=gen)
 
-                        if size > 10:
+                        if size >= 10:
                             self.assertTrue(not torch.allclose(expected, actual))
                             self.assertTrue(not torch.allclose(expected, actual_out))
 

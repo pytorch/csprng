@@ -339,7 +339,7 @@ Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) 
 
 // =============================================== Random permutation =================================================
 
-// randperm implementation was copied from PyTorch, to unblock CSPRNG users, but ultimately CSPRNG must reuse
+// randperm implementation was copied from PyTorch to unblock CSPRNG users, but ultimately CSPRNG must reuse
 // refactored randperm from PyTorch, see https://github.com/pytorch/pytorch/issues/43816
 
 namespace {
@@ -390,12 +390,13 @@ namespace {
 
 Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generator> generator) {
   TORCH_CHECK(n >= 0, "n must be non-negative, got", n);
+  check_supported_max_int_with_precision(n, result);
   if (result.device().type() == at::kCUDA) {
     auto result_cpu = at::empty({n}, result.options().device(kCPU));
     randperm_generator_out(result_cpu, n, generator);
+    result.resize_({n});
     return result.copy_(result_cpu);
   }
-  check_supported_max_int_with_precision(n, result);
   result.resize_({n});
   // See Note [Acquire lock when using random generators]
   std::lock_guard<std::mutex> lock(generator->mutex());
