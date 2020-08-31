@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 #pragma once
 #include <torch/extension.h>
 #include <torch/library.h>
@@ -63,7 +71,7 @@ void aes_helper(TensorIterator& iter, const uint8_t* key, transform_t transform_
     [key] TORCH_CSPRNG_HOST_DEVICE (unsigned int idx) -> aes::block_t {
       aes::block_t block;
       memset(&block, 0, aes::block_t_size);
-      *(reinterpret_cast<unsigned int*>(&block)) = idx;
+      block.x = idx;
       aes::encrypt(reinterpret_cast<uint8_t*>(&block), key);
       return block;
     },
@@ -329,6 +337,75 @@ Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) 
   return exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
 }
 
+// =============================================== Random permutation =================================================
+
+// randperm implementation was copied from PyTorch to unblock CSPRNG users, but ultimately CSPRNG must reuse
+// refactored randperm from PyTorch, see https://github.com/pytorch/pytorch/issues/43816
+
+namespace {
+
+  inline void check_supported_max_int_with_precision(int64_t n, const Tensor& tensor) {
+    TORCH_CHECK(at::scalar_tensor(n, tensor.options()).defined(),
+                "n is too large for result tensor type: '", tensor.toString(), "'");
+
+    // Ensure sufficient precision for floating point representation.
+    switch (tensor.scalar_type()) {
+      case at::ScalarType::Half:
+        TORCH_CHECK(n <= (int64_t(1) << 11) + 1, "n cannot be greater than 2049 for Half type.");
+        break;
+      case at::ScalarType::Float:
+        TORCH_CHECK(n <= (int64_t(1) << 24) + 1, "n cannot be greater than 2^24+1 for Float type.");
+        break;
+      case at::ScalarType::Double:  // Unlikely to happen, but doesn't hurt to check
+        TORCH_CHECK(n <= (int64_t(1) << 53) + 1, "n cannot be greater than 2^53+1 for Double type.");
+        break;
+      default:
+        break;
+    }
+  }
+
+  template <typename scalar_t, typename RNG>
+  void randperm(Tensor& result, int64_t n, c10::optional<at::Generator> generator) {
+    auto gen = at::check_generator<RNG>(generator);
+    scalar_t *r__data = result.data_ptr<scalar_t>();
+
+    result.resize_({n});
+    int64_t r__stride_0 = result.stride(0);
+
+    at::parallel_for(0, n, internal::GRAIN_SIZE,
+                     [&r__data, &r__stride_0](int64_t p_begin, int64_t p_end) {
+                       for(int64_t i = p_begin; i < p_end; i++)
+                         r__data[i*r__stride_0] = static_cast<scalar_t>(i);
+                     });
+
+    for(int64_t i = 0; i < n - 1; i++)
+    {
+      int64_t z = gen->random() % (n-i);
+      scalar_t sav = r__data[i*r__stride_0];
+      r__data[i*r__stride_0] = r__data[(z+i)*r__stride_0];
+      r__data[(z+i)*r__stride_0] = sav;
+    }
+  }
+} // namespace
+
+Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generator> generator) {
+  TORCH_CHECK(n >= 0, "n must be non-negative, got", n);
+  check_supported_max_int_with_precision(n, result);
+  if (result.device().type() == at::kCUDA) {
+    auto result_cpu = at::empty({n}, result.options().device(kCPU));
+    randperm_generator_out(result_cpu, n, generator);
+    result.resize_({n});
+    return result.copy_(result_cpu);
+  }
+  result.resize_({n});
+  // See Note [Acquire lock when using random generators]
+  std::lock_guard<std::mutex> lock(generator->mutex());
+  AT_DISPATCH_ALL_TYPES_AND(at::ScalarType::Half, result.scalar_type(), "randperm", [&]() -> void {
+    randperm<scalar_t, CSPRNGGeneratorImpl>(result, n, generator);
+  });
+  return result;
+}
+
 // ====================================================================================================================
 
 Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
@@ -378,6 +455,8 @@ TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
   m.impl_UNBOXED("geometric_",               geometric_);
   // Exponential
   m.impl_UNBOXED("exponential_",             exponential_);
+  // Random permutation
+  m.impl_UNBOXED("randperm.generator_out",   randperm_generator_out);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
