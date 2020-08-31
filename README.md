@@ -42,6 +42,9 @@ The following list of methods supports all forementioned PRNGs:
 | log_normal_(mean, std) | yes  | yes |
 | geometric_(p)          | yes  | yes |
 | exponential_(lambda)   | yes  | yes |
+| randperm(n)            | yes* | yes |
+
+* the calculations are done on CPU and the result is copied to CUDA
 
 ## Installation
 
