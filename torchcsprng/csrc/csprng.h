@@ -71,7 +71,7 @@ void aes_helper(TensorIterator& iter, const uint8_t* key, transform_t transform_
     [key] TORCH_CSPRNG_HOST_DEVICE (unsigned int idx) -> aes::block_t {
       aes::block_t block;
       memset(&block, 0, aes::block_t_size);
-      *(reinterpret_cast<unsigned int*>(&block)) = idx;
+      block.x = idx;
       aes::encrypt(reinterpret_cast<uint8_t*>(&block), key);
       return block;
     },
