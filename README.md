@@ -42,6 +42,9 @@ The following list of methods supports all forementioned PRNGs:
 | log_normal_(mean, std) | yes  | yes |
 | geometric_(p)          | yes  | yes |
 | exponential_(lambda)   | yes  | yes |
+| randperm(n)            | yes* | yes |
+
+* the calculations are done on CPU and the result is copied to CUDA
 
 ## Installation
 
@@ -66,7 +69,7 @@ pip:
 
 | OS      | CUDA                                          |                                                                                     |
 |---------|-----------------------------------------------|-------------------------------------------------------------------------------------|
-| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | pip install torchcsprng==0.1.1+cu92 torch==1.6.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.1.1+cu101 torch==1.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.1.1+cpu torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
+| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>None | pip install torchcsprng==0.1.2+cu92 torch==1.6.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.1.2+cu101 torch==1.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.1.2+cpu torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
 | macOS   | None                                          | pip install torchcsprng torch                                                       |
 | Windows | None                                          | pip install torchcsprng torch -f https://download.pytorch.org/whl/torch_stable.html |
 

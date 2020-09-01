@@ -313,5 +313,27 @@ class TestCSPRNG(unittest.TestCase):
         self.assertTrue(version.__version__)
         self.assertTrue(version.git_version)
 
+    def test_randperm(self):
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                for dtype in self.int_dtypes:
+                    for size in range(0, 20):
+                        expected = torch.arange(size, dtype=dtype, device=device)
+
+                        actual = torch.randperm(size, dtype=dtype, device=device, generator=gen)
+
+                        actual_out = torch.empty(1, dtype=dtype, device=device)
+                        torch.randperm(size, out=actual_out, generator=gen)
+
+                        if size >= 10:
+                            self.assertTrue(not torch.allclose(expected, actual))
+                            self.assertTrue(not torch.allclose(expected, actual_out))
+
+                        actual = actual.sort()[0]
+                        actual_out = actual.sort()[0]
+
+                        self.assertTrue(torch.allclose(expected, actual))
+                        self.assertTrue(torch.allclose(expected, actual_out))
+
 if __name__ == '__main__':
     unittest.main()
