@@ -37,6 +37,9 @@ template<typename RNG>
 at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
+  if (gen->key().defined()) {
+    return gen->key().clone();
+  }
   auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
   using random_t = uint32_t;
   constexpr size_t random_t_size = sizeof(random_t);
