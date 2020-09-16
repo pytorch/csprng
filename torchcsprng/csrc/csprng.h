@@ -432,7 +432,7 @@ Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) 
   }
 }
 
-bool is_built_with_cuda() {
+bool supports_cuda() {
 #if defined(__CUDACC__) || defined(__HIPCC__)
   return true;
 #else
@@ -476,7 +476,7 @@ TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("is_built_with_cuda", &is_built_with_cuda);
+  m.def("supports_cuda", &supports_cuda);
   m.def("create_random_device_generator", &create_random_device_generator, py::arg("token") = nullptr);
   m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
   m.def("aes128_key_tensor", &aes128_key_tensor_pybind);
