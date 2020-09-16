@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 #pragma once
 
 #include "macros.h"
@@ -33,8 +41,14 @@ at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generato
     return gen->key().clone();
   }
   auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  for (size_t i = 0; i < block_t_size; i++) {
-    t[i] = static_cast<uint8_t>(gen->random());
+  using random_t = uint32_t;
+  constexpr size_t random_t_size = sizeof(random_t);
+  for (size_t i = 0; i < block_t_size / random_t_size; i++) {
+    const auto rand = gen->random();
+    for (size_t j = 0; j < random_t_size; j++) {
+      size_t k = i * random_t_size + j;
+      t[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
+    }
   }
   return t;
 }
