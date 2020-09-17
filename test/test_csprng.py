@@ -335,5 +335,24 @@ class TestCSPRNG(unittest.TestCase):
                         self.assertTrue(torch.allclose(expected, actual))
                         self.assertTrue(torch.allclose(expected, actual_out))
 
+    def test_aes128_key_tensor(self):
+        size = 10
+        for gen in self.all_generators:
+            s = set()
+            for _ in range(0, size):
+                t = csprng.aes128_key_tensor(gen)
+                s.add(str(t))
+            self.assertEqual(len(s), size)
+
+    def test_const_generator(self):
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                for dtype in self.int_dtypes:
+                    key = csprng.aes128_key_tensor(gen)
+                    const_gen = csprng.create_const_generator(key)
+                    first = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
+                    second = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
+                    self.assertTrue((first - second).max().abs() == 0)
+
 if __name__ == '__main__':
     unittest.main()
