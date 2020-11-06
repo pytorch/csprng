@@ -76,12 +76,12 @@ Tensor aes128_key_tensor(Generator generator) {
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key, transform_t transform_func) {
   block_cipher_ctr_mode<scalar_t, uint_t, N>(iter, aes::block_t_size,
-    [key] TORCH_CSPRNG_HOST_DEVICE (scalar_t* data) -> scalar_t {
+    [key] TORCH_CSPRNG_HOST_DEVICE (scalar_t* data) -> int {
 //      aes::block_t block;
 //      memset(&block, 0, aes::block_t_size);
 //      block.x = idx;
       aes::encrypt(reinterpret_cast<uint8_t*>(&data), key);
-      return data;
+      return 0;
     },
     transform_func
   );
