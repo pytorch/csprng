@@ -84,20 +84,20 @@ template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, ty
 TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(int idx, scalar_t* data, int64_t numel, size_t block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
   const int unroll_factor = block_t_size / sizeof(uint_t) / N;
   if (unroll_factor * idx < numel) {
-    auto block = cipher(idx);
-    UNROLL_IF_CUDA
-    for (auto i = 0; i < unroll_factor; ++i) {
-      const auto li = unroll_factor * idx + i;
-      if (li < numel) {
-        uint64_t vals[N];
-        UNROLL_IF_CUDA
-        for (size_t j = 0; j < N; j++) {
-          vals[j] = (reinterpret_cast<uint_t*>(&block))[N * i + j];
-        }
-        RNGValues<N> rng(vals);
-        data[index_calc(li)] = transform_func(&rng);
-      }
-    }
+    auto block = cipher(data[unroll_factor * idx]);
+//    UNROLL_IF_CUDA
+//    for (auto i = 0; i < unroll_factor; ++i) {
+//      const auto li = unroll_factor * idx + i;
+//      if (li < numel) {
+//        uint64_t vals[N];
+//        UNROLL_IF_CUDA
+//        for (size_t j = 0; j < N; j++) {
+//          vals[j] = (reinterpret_cast<uint_t*>(&block))[N * i + j];
+//        }
+//        RNGValues<N> rng(vals);
+//        data[index_calc(li)] = transform_func(&rng);
+//      }
+//    }
   }
 }
 
