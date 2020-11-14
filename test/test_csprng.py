@@ -354,5 +354,48 @@ class TestCSPRNG(unittest.TestCase):
                     second = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
                     self.assertTrue((first - second).max().abs() == 0)
 
+    def test_encrypt_decrypt(self):
+        key_size_bytes = 16
+        block_size_bytes = 16
+
+        def sizeof(dtype):
+            if dtype == torch.bool:
+                return 1
+            elif dtype.is_floating_point:
+                return torch.finfo(dtype).bits // 8
+            else:
+                return torch.iinfo(dtype).bits // 8
+
+        for device in self.all_devices:
+            for key_dtype in self.all_dtypes:
+                key_size = key_size_bytes // sizeof(key_dtype)
+                key = torch.empty(key_size, dtype=key_dtype, device=device).random_()
+                for initial_dtype in self.all_dtypes:
+                    for encrypted_dtype in self.all_dtypes:
+                        for decrypted_dtype in self.all_dtypes:
+                            for initial_size in [0, 4, 8, 15, 16, 23, 42]:
+
+                                encrypted_size = (initial_size * sizeof(initial_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
+                                decrypted_size = (encrypted_size * sizeof(encrypted_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(decrypted_dtype)
+
+                                initial = torch.empty(initial_size, dtype=initial_dtype, device=device).random_()
+                                encrypted = torch.empty(encrypted_size, dtype=encrypted_dtype, device=device).random_()
+                                decrypted = torch.empty(decrypted_size, dtype=decrypted_dtype, device=device).random_()
+
+                                initial_np = initial.numpy().view(np.int8)
+                                decrypted_np = decrypted.numpy().view(np.int8)
+                                padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
+                                if padding_size_bytes != 0:
+                                    decrypted_np = decrypted_np[:padding_size_bytes]
+
+                                csprng.encrypt(initial, encrypted, key, "aes128", "ecb")
+
+                                if initial_size > 8:
+                                    self.assertFalse(np.array_equal(initial_np, decrypted_np))
+
+                                csprng.decrypt(encrypted, decrypted, key, "aes128", "ecb")
+
+                                self.assertTrue(np.array_equal(initial_np, decrypted_np))
+
 if __name__ == '__main__':
     unittest.main()

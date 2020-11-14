@@ -18,6 +18,7 @@
 #include <random>
 #include "macros.h"
 #include "block_cipher.h"
+#include "block_cipher_2.h"
 #include "aes.h"
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
@@ -416,6 +417,76 @@ Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generato
 
 // ====================================================================================================================
 
+// Let's assume that input and output have integral dtype, so there is no transform for now.
+Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+//  TORCH_CHECK(input.numel() * input.itemsize() == output.numel() * output.itemsize(), "input and output tensors must have the same size in byte");
+  if (cipher == "aes128") {
+    TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
+  }
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    block_cipher_2(input, output,
+      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+        aes::encrypt(block, key_bytes);
+      },
+      aes::block_t_size
+    );
+  } else if (mode == "ctr") {
+    block_cipher_2(input, output,
+      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+        uint8_t idx_block[aes::block_t_size];
+        *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+        aes::encrypt(idx_block, key_bytes);
+        for (size_t i = 0; i < aes::block_t_size; i++) {
+          block[i] ^= idx_block[i];
+        }
+      },
+      aes::block_t_size
+    );
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
+
+// Let's assume that input and output have integral dtype, so there is no transform for now.
+Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string cipher, std::string mode) {
+//  TORCH_CHECK(input.numel() * input.itemsize() == output.numel() * output.itemsize(), "input and output tensors must have the same size in byte");
+  if (cipher == "aes128") {
+    TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
+  }
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    block_cipher_2(input, output,
+      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+        aes::decrypt(block, key_bytes);
+      },
+      aes::block_t_size
+    );
+  } else if (mode == "ctr") {
+    block_cipher_2(input, output,
+      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+        uint8_t idx_block[aes::block_t_size];
+        *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+        aes::decrypt(idx_block, key_bytes);
+        for (size_t i = 0; i < aes::block_t_size; i++) {
+          block[i] ^= idx_block[i];
+        }
+      },
+      aes::block_t_size
+    );
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
+
+// ====================================================================================================================
+
 Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
   if (token.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*token);
@@ -481,4 +552,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
   m.def("aes128_key_tensor", &aes128_key_tensor_pybind);
   m.def("create_const_generator", &create_const_generator);
+  m.def("encrypt", &encrypt_pybind);
+  m.def("decrypt", &decrypt_pybind);
 }
