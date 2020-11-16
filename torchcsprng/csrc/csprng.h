@@ -437,6 +437,7 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
     block_cipher_2(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         uint8_t idx_block[aes::block_t_size];
+        std::memset(&idx_block, 0, aes::block_t_size);
         *(reinterpret_cast<int64_t*>(idx_block)) = idx;
         aes::encrypt(idx_block, key_bytes);
         for (size_t i = 0; i < aes::block_t_size; i++) {
@@ -471,8 +472,9 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string ciphe
     block_cipher_2(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         uint8_t idx_block[aes::block_t_size];
+        std::memset(&idx_block, 0, aes::block_t_size);
         *(reinterpret_cast<int64_t*>(idx_block)) = idx;
-        aes::decrypt(idx_block, key_bytes);
+        aes::encrypt(idx_block, key_bytes);
         for (size_t i = 0; i < aes::block_t_size; i++) {
           block[i] ^= idx_block[i];
         }
