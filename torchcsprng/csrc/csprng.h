@@ -128,7 +128,7 @@ void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t tran
       }
     },
     aes::block_t_size / (N * sizeof(uint_t)),
-    [transform_func] TORCH_CSPRNG_HOST_DEVICE (auto block) {
+    [transform_func] TORCH_CSPRNG_HOST_DEVICE (uint8_t* block) {
       const auto n = aes::block_t_size / (N * sizeof(uint_t));
 //      std::cout << "N = " << N << std::endl;
 //      std::cout << "sizeof(uint_t) = " << sizeof(uint_t) << std::endl;
