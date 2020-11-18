@@ -166,7 +166,7 @@ void block_cipher(
   }
 }
 
-std::function<int(int)> create_index_calc(Tensor input) {
+std::function<TORCH_CSPRNG_HOST_DEVICE int(int)> create_index_calc(Tensor input) {
   if (input.is_contiguous()) {
     const auto input_type_size = input.element_size();
     return [input_type_size] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
