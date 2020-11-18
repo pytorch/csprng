@@ -128,9 +128,9 @@ void block_cipher(
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     Device device, cipher_t cipher, int output_elem_per_block, transform_t transform_func) {
-//  if (input.numel() == 0) {
-//    return;
-//  }
+  if (output_ptr == nullptr || output_numel == 0) {
+    return;
+  }
 //  TORCH_CHECK((input_numel * input_type_size + block_size - 1) / block_size * block_size == output_numel * output_type_size, "wrong size");
 
 //  const auto size_in_bytes = input_numel * input_type_size;
@@ -182,16 +182,26 @@ std::function<TORCH_CSPRNG_HOST_DEVICE int(int)> create_index_calc(Tensor input)
 }
 
 template<int block_size, typename cipher_t>
-void block_cipher(Tensor input, Tensor output,
-                  cipher_t cipher) {
-
+void block_cipher(Tensor input, Tensor output, cipher_t cipher) {
   const auto input_ptr = input.data_ptr();
   const auto input_numel = input.numel();
+
+  // Otherwise OffsetCalculator/IntDivider crashes with integer division by zero
+  if (input_ptr == nullptr || input_numel == 0) {
+    return;
+  }
+
   const auto input_type_size = input.element_size();
   const auto input_index_calc = create_index_calc(input);
 
   const auto output_ptr = output.data_ptr();
   const auto output_numel = output.numel();
+
+  // Otherwise OffsetCalculator/IntDivider crashes with integer division by zero
+  if (output_ptr == nullptr || output_numel == 0) {
+    return;
+  }
+
   const auto output_type_size = output.element_size();
   const auto output_index_calc = create_index_calc(output);
 
