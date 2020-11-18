@@ -83,7 +83,7 @@ __global__ static void block_cipher_kernel_cuda(cipher_t cipher, int output_elem
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     transform_t transform) {
   const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-  block_cipher_kernel_helper(idx, cipher, output_elem_per_block,
+  block_cipher_kernel_helper<block_size>(idx, cipher, output_elem_per_block,
     input_ptr, input_numel, input_type_size, input_index_calc,
     output_ptr, output_numel, output_type_size, output_index_calc,
     transform);
