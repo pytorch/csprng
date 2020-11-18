@@ -166,20 +166,19 @@ void block_cipher(
   }
 }
 
-auto create_index_calc(Tensor input) {
-//  if (input.is_contiguous()) {
-//    const auto input_type_size = input.element_size();
-//    return [input_type_size] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
-//      return li * input_type_size;
+//auto create_index_calc(Tensor input) {
+////  if (input.is_contiguous()) {
+////    const auto input_type_size = input.element_size();
+////    return [input_type_size] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+////      return li * input_type_size;
+////    };
+////  } else {
+//    const auto input_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(input));
+//    return [input_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+//      return input_offset_calc.get(li)[0];
 //    };
-//  } else {
-    const auto input_iter = TensorIterator::nullary_op(input);
-    const auto input_offset_calc = make_offset_calculator<1>(input_iter);
-    return [input_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
-      return input_offset_calc.get(li)[0];
-    };
-//  }
-}
+////  }
+//}
 
 template<int block_size, typename cipher_t>
 void block_cipher(Tensor input, Tensor output, cipher_t cipher) {
@@ -192,7 +191,10 @@ void block_cipher(Tensor input, Tensor output, cipher_t cipher) {
   }
 
   const auto input_type_size = input.element_size();
-  const auto input_index_calc = create_index_calc(input);
+  const auto input_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(input));
+  const auto input_index_calc = [input_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return input_offset_calc.get(li)[0];
+  };
 
   const auto output_ptr = output.data_ptr();
   const auto output_numel = output.numel();
@@ -203,7 +205,10 @@ void block_cipher(Tensor input, Tensor output, cipher_t cipher) {
   }
 
   const auto output_type_size = output.element_size();
-  const auto output_index_calc = create_index_calc(output);
+  const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
+  const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return output_offset_calc.get(li)[0];
+  };
 
   const auto device = output.device();
 

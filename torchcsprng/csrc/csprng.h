@@ -113,10 +113,13 @@ private:
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
   auto  output = iter.tensor(0);
-  const auto index_calc = create_index_calc(output);
+  const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
+  const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return output_offset_calc.get(li)[0];
+  };
   block_cipher<aes::block_t_size>(
-    nullptr, 0, 0, index_calc,
-    output.data_ptr(), output.numel(), output.element_size(), index_calc,
+    nullptr, 0, 0, output_index_calc,
+    output.data_ptr(), output.numel(), output.element_size(), output_index_calc,
     iter.device_type(),
     [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
       uint8_t idx_block[aes::block_t_size];
