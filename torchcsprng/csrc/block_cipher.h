@@ -201,7 +201,7 @@ void block_cipher(Tensor input, Tensor output,
       input_ptr, input_numel, input_type_size, input_index_calc,
       output_ptr, output_numel, output_type_size, output_index_calc,
       device, cipher, block_size / output_type_size,
-      [] (auto x) {});
+      [] TORCH_CSPRNG_HOST_DEVICE (auto x) {});
 }
 
 }}
