@@ -155,7 +155,7 @@ void block_cipher(
     const auto grid = (output_numel + (threads * output_elem_per_block) - 1) / (threads * output_elem_per_block);
     auto stream = at::cuda::getCurrentCUDAStream();
     block_cipher_kernel_cuda<<<grid, threads, 0, stream>>>(
-        cipher, block_size, output_elem_per_block
+        cipher, block_size, output_elem_per_block,
         input_ptr, input_numel, input_type_size, input_index_calc,
         output_ptr, output_numel, output_type_size, output_index_calc,
         transform_func
