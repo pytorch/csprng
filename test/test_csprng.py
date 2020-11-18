@@ -69,6 +69,11 @@ class TestCSPRNG(unittest.TestCase):
                 for dtype in self.num_dtypes:
                     t = torch.zeros(self.size, dtype=dtype, device=device).random_(to_, generator=gen)
                     res = stats.kstest(t.cpu(), stats.randint.cdf, args=(0, to_))
+                    # TODO REVERT!
+                    # if res.statistic >= 0.1:
+                    #     print(t[:10])
+                    #     print(dtype)
+                    #     print(res.statistic)
                     self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -90,6 +95,11 @@ class TestCSPRNG(unittest.TestCase):
                             if from_ < to_:
                                 t = torch.zeros(self.size, dtype=dtype, device=device).random_(from_, to_, generator=gen)
                                 res = stats.kstest(t.cpu(), stats.randint.cdf, args=(from_, to_))
+                                # TODO REVERT!
+                                # if res.statistic >= 0.1:
+                                #     print(t[:10])
+                                #     print(dtype)
+                                #     print(res.statistic)
                                 self.assertTrue(res.statistic < 0.2)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
