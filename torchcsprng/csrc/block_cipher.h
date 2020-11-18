@@ -46,11 +46,8 @@ TORCH_CSPRNG_HOST_DEVICE static void copy_input_to_block(int64_t idx, uint8_t* b
 }
 
 template<typename output_index_calc_t>
-TORCH_CSPRNG_HOST_DEVICE static void copy_block_to_output(int64_t idx, uint8_t* block, int block_size, int output_elem_per_block,
+TORCH_CSPRNG_HOST_DEVICE static void copy_block_to_output(int64_t idx, uint8_t* block, int output_elem_per_block,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc) {
-//  std::cout << "output_elem_per_block = " << output_elem_per_block << std::endl;
-//  std::cout << "block_size = " << block_size << std::endl;
-//  std::cout << "output_type_size = " << output_type_size << std::endl;
   for (auto i = 0; i < output_elem_per_block; ++i) {
     const auto linear_index = idx * output_elem_per_block + i;
     if (linear_index < output_numel) {
@@ -63,9 +60,9 @@ TORCH_CSPRNG_HOST_DEVICE static void copy_block_to_output(int64_t idx, uint8_t* 
   }
 }
 
-template<typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
 TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(
-    int64_t idx, cipher_t cipher, int block_size, int output_elem_per_block,
+    int64_t idx, cipher_t cipher, int output_elem_per_block,
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     transform_t transform) {
@@ -75,50 +72,50 @@ TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(
     copy_input_to_block(idx, block, block_size, input_ptr, input_numel, input_type_size, input_index_calc);
   }
   cipher(idx, block);
-  const auto new_block_size = transform(block);
-  copy_block_to_output(idx, block, new_block_size, output_elem_per_block, output_ptr, output_numel, output_type_size, output_index_calc);
+  transform(block);
+  copy_block_to_output(idx, block, output_elem_per_block, output_ptr, output_numel, output_type_size, output_index_calc);
 }
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
-template<typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
-__global__ static void block_cipher_kernel_cuda(cipher_t cipher, int block_size, int output_elem_per_block,
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+__global__ static void block_cipher_kernel_cuda(cipher_t cipher, int output_elem_per_block,
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     transform_t transform) {
   const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-  block_cipher_kernel_helper(idx, cipher, block_size, output_elem_per_block
+  block_cipher_kernel_helper(idx, cipher, output_elem_per_block
     input_ptr, input_numel, input_type_size, input_index_calc,
     output_ptr, output_numel, output_type_size, output_index_calc,
     transform);
 }
 #endif
 
-template<typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
-static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, cipher_t cipher, int block_size, int output_elem_per_block,
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, cipher_t cipher, int output_elem_per_block,
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     transform_t transform) {
   for (auto idx = begin; idx < end; ++idx) {
-    block_cipher_kernel_helper(idx, cipher, block_size, output_elem_per_block,
+    block_cipher_kernel_helper<block_size>(idx, cipher, output_elem_per_block,
       input_ptr, input_numel, input_type_size, input_index_calc,
       output_ptr, output_numel, output_type_size, output_index_calc,
       transform);
   }
 }
 
-template<typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
-static void block_cipher_kernel_cpu(int64_t total, cipher_t cipher, int block_size, int output_elem_per_block,
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+static void block_cipher_kernel_cpu(int64_t total, cipher_t cipher, int output_elem_per_block,
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
     transform_t transform_func) {
   if (total < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
-    block_cipher_kernel_cpu_serial(0, total, cipher, block_size, output_elem_per_block,
+    block_cipher_kernel_cpu_serial<block_size>(0, total, cipher, output_elem_per_block,
       input_ptr, input_numel, input_type_size, input_index_calc,
       output_ptr, output_numel, output_type_size, output_index_calc,
       transform_func);
   } else {
     at::parallel_for(0, total, at::internal::GRAIN_SIZE, [&](int64_t begin, int64_t end) {
-      block_cipher_kernel_cpu_serial(begin, end, cipher, block_size, output_elem_per_block,
+      block_cipher_kernel_cpu_serial<block_size>(begin, end, cipher, output_elem_per_block,
         input_ptr, input_numel, input_type_size, input_index_calc,
         output_ptr, output_numel, output_type_size, output_index_calc,
         transform_func);
@@ -126,11 +123,11 @@ static void block_cipher_kernel_cpu(int64_t total, cipher_t cipher, int block_si
   }
 }
 
-template<typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
 void block_cipher(
     void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
     void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
-    Device device, cipher_t cipher, int block_size, int output_elem_per_block, transform_t transform_func) {
+    Device device, cipher_t cipher, int output_elem_per_block, transform_t transform_func) {
 //  if (input.numel() == 0) {
 //    return;
 //  }
@@ -143,8 +140,8 @@ void block_cipher(
 //    const auto total = (size_in_bytes + block_size - 1) / block_size;
 //    const auto total = (size_in_bytes + block_size / N - 1) / block_size * N;
     const auto total = (output_numel + output_elem_per_block - 1) / output_elem_per_block;
-    block_cipher_kernel_cpu(total,
-        cipher, block_size, output_elem_per_block,
+    block_cipher_kernel_cpu<block_size>(total,
+        cipher, output_elem_per_block,
         input_ptr, input_numel, input_type_size, input_index_calc,
         output_ptr, output_numel, output_type_size, output_index_calc,
         transform_func
@@ -154,7 +151,7 @@ void block_cipher(
     const auto threads = 256;
     const auto grid = (output_numel + (threads * output_elem_per_block) - 1) / (threads * output_elem_per_block);
     auto stream = at::cuda::getCurrentCUDAStream();
-    block_cipher_kernel_cuda<<<grid, threads, 0, stream>>>(
+    block_cipher_kernel_cuda<block_sizev><<<grid, threads, 0, stream>>>(
         cipher, block_size, output_elem_per_block,
         input_ptr, input_numel, input_type_size, input_index_calc,
         output_ptr, output_numel, output_type_size, output_index_calc,
@@ -184,9 +181,9 @@ std::function<int(int)> create_index_calc(Tensor input) {
   }
 }
 
-template<typename cipher_t>
+template<int block_size, typename cipher_t>
 void block_cipher(Tensor input, Tensor output,
-                  cipher_t cipher, int block_size) {
+                  cipher_t cipher) {
 
   const auto input_ptr = input.data_ptr();
   const auto input_numel = input.numel();
@@ -200,11 +197,11 @@ void block_cipher(Tensor input, Tensor output,
 
   const auto device = output.device();
 
-  block_cipher(
+  block_cipher<block_size>(
       input_ptr, input_numel, input_type_size, input_index_calc,
       output_ptr, output_numel, output_type_size, output_index_calc,
-      device, cipher, block_size, block_size / output_type_size,
-      [block_size] (auto x) { return block_size; });
+      device, cipher, block_size / output_type_size,
+      [] (auto x) {});
 }
 
 }}

@@ -114,7 +114,7 @@ template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
   auto  output = iter.tensor(0);
   const auto index_calc = create_index_calc(output);
-  block_cipher(
+  block_cipher<aes::block_t_size>(
     nullptr, 0, 0, index_calc,
     output.data_ptr(), output.numel(), output.element_size(), index_calc,
     iter.device_type(),
@@ -127,7 +127,7 @@ void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t tran
         block[i] ^= idx_block[i];
       }
     },
-    aes::block_t_size, aes::block_t_size / (N * sizeof(uint_t)),
+    aes::block_t_size / (N * sizeof(uint_t)),
     [transform_func] (auto block) {
       const auto n = aes::block_t_size / (N * sizeof(uint_t));
 //      std::cout << "N = " << N << std::endl;
@@ -141,7 +141,6 @@ void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t tran
         RNGValues<N> rng(vals);
         reinterpret_cast<scalar_t*>(block)[i] = transform_func(&rng);
       }
-      return n * sizeof(uint_t);
     }
   );
 }
@@ -485,14 +484,13 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
   }
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
   if (mode == "ecb") {
-    block_cipher(input, output,
+    block_cipher<aes::block_t_size>(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         aes::encrypt(block, key_bytes);
-      },
-      aes::block_t_size
+      }
     );
   } else if (mode == "ctr") {
-    block_cipher(input, output,
+    block_cipher<aes::block_t_size>(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         uint8_t idx_block[aes::block_t_size];
         std::memset(&idx_block, 0, aes::block_t_size);
@@ -501,8 +499,7 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
         for (size_t i = 0; i < aes::block_t_size; i++) {
           block[i] ^= idx_block[i];
         }
-      },
-      aes::block_t_size
+      }
     );
   } else {
     TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
@@ -520,14 +517,13 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string ciphe
   }
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
   if (mode == "ecb") {
-    block_cipher(input, output,
+    block_cipher<aes::block_t_size>(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         aes::decrypt(block, key_bytes);
-      },
-      aes::block_t_size
+      }
     );
   } else if (mode == "ctr") {
-    block_cipher(input, output,
+    block_cipher<aes::block_t_size>(input, output,
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
         uint8_t idx_block[aes::block_t_size];
         std::memset(&idx_block, 0, aes::block_t_size);
@@ -536,8 +532,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string ciphe
         for (size_t i = 0; i < aes::block_t_size; i++) {
           block[i] ^= idx_block[i];
         }
-      },
-      aes::block_t_size
+      }
     );
   } else {
     TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
