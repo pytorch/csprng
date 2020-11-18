@@ -166,19 +166,19 @@ void block_cipher(
   }
 }
 
-std::function<TORCH_CSPRNG_HOST_DEVICE int(int)> create_index_calc(Tensor input) {
-  if (input.is_contiguous()) {
-    const auto input_type_size = input.element_size();
-    return [input_type_size] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
-      return li * input_type_size;
-    };
-  } else {
+auto create_index_calc(Tensor input) {
+//  if (input.is_contiguous()) {
+//    const auto input_type_size = input.element_size();
+//    return [input_type_size] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+//      return li * input_type_size;
+//    };
+//  } else {
     const auto input_iter = TensorIterator::nullary_op(input);
     const auto input_offset_calc = make_offset_calculator<1>(input_iter);
     return [input_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
       return input_offset_calc.get(li)[0];
     };
-  }
+//  }
 }
 
 template<int block_size, typename cipher_t>
