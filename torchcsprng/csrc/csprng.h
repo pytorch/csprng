@@ -518,6 +518,7 @@ void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
 
 // Let's assume that input and output have integral dtype, so there is no transform for now.
 Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+  TORCH_CHECK(input.device() == output.device(), "input and output tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
   const auto input_size_bytes_rounded = (input_size_bytes + aes::block_t_size - 1) / aes::block_t_size * aes::block_t_size;
@@ -526,7 +527,7 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
               ") is not equal to input size in bytes rounded to block size(",
               input_size_bytes_rounded, ")");
   check_cipher(cipher, key);
-  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.cpu().contiguous().data_ptr());
   if (mode == "ecb") {
     aes_ecb_encrypt(input, output, key_bytes);
   } else if (mode == "ctr") {
@@ -539,12 +540,13 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // Let's assume that input and output have integral dtype, so there is no transform for now.
 Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string cipher, std::string mode) {
+  TORCH_CHECK(input.device() == output.device(), "input and output tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
   TORCH_CHECK(output_size_bytes == input_size_bytes, "input and output tensors must have the same size in byte");
   TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes");
   check_cipher(cipher, key);
-  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.cpu().contiguous().data_ptr());
   if (mode == "ecb") {
     aes_ecb_decrypt(input, output, key_bytes);
   } else if (mode == "ctr") {
