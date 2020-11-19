@@ -112,7 +112,7 @@ private:
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
-  auto  output = iter.tensor(0);
+  const auto output = iter.tensor(0);
   const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
   const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
     return output_offset_calc.get(li)[0];
@@ -133,9 +133,6 @@ void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t tran
     aes::block_t_size / (N * sizeof(uint_t)),
     [transform_func] TORCH_CSPRNG_HOST_DEVICE (uint8_t* block) {
       const auto n = aes::block_t_size / (N * sizeof(uint_t));
-//      std::cout << "N = " << N << std::endl;
-//      std::cout << "sizeof(uint_t) = " << sizeof(uint_t) << std::endl;
-//      std::cout << "n = " << n << std::endl;
       for (size_t i = 0; i < n; ++i) {
         uint64_t vals[N];
         for (size_t j = 0; j < N; ++j) {

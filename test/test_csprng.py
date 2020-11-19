@@ -392,8 +392,8 @@ class TestCSPRNG(unittest.TestCase):
                                     encrypted = torch.empty(encrypted_size, dtype=encrypted_dtype, device=device).random_()
                                     decrypted = torch.empty(decrypted_size, dtype=decrypted_dtype, device=device).random_()
 
-                                    initial_np = initial.numpy().view(np.int8)
-                                    decrypted_np = decrypted.numpy().view(np.int8)
+                                    initial_np = initial.cpu().numpy().view(np.int8)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
                                     padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
                                     if padding_size_bytes != 0:
                                         decrypted_np = decrypted_np[:padding_size_bytes]
