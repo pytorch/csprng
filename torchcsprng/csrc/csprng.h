@@ -474,33 +474,57 @@ Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generato
 
 // ====================================================================================================================
 
-// Let's assume that input and output have integral dtype, so there is no transform for now.
-Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
-//  TORCH_CHECK(input.numel() * input.itemsize() == output.numel() * output.itemsize(), "input and output tensors must have the same size in byte");
+void check_cipher(const std::string& cipher, Tensor key) {
   if (cipher == "aes128") {
     TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
   } else {
     TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
   }
+}
+
+void aes_ecb_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::encrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ecb_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::decrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ctr_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      uint8_t idx_block[aes::block_t_size];
+      std::memset(&idx_block, 0, aes::block_t_size);
+      *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+      aes::encrypt(idx_block, key_bytes);
+      for (size_t i = 0; i < aes::block_t_size; i++) {
+        block[i] ^= idx_block[i];
+      }
+    }
+  );
+}
+
+void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  aes_ctr_encrypt(input, output, key_bytes);
+}
+
+// Let's assume that input and output have integral dtype, so there is no transform for now.
+Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+//  TORCH_CHECK(input.numel() * input.itemsize() == output.numel() * output.itemsize(), "input and output tensors must have the same size in byte");
+  check_cipher(cipher, key);
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
   if (mode == "ecb") {
-    block_cipher<aes::block_t_size>(input, output,
-      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
-        aes::encrypt(block, key_bytes);
-      }
-    );
+    aes_ecb_encrypt(input, output, key_bytes);
   } else if (mode == "ctr") {
-    block_cipher<aes::block_t_size>(input, output,
-      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
-        uint8_t idx_block[aes::block_t_size];
-        std::memset(&idx_block, 0, aes::block_t_size);
-        *(reinterpret_cast<int64_t*>(idx_block)) = idx;
-        aes::encrypt(idx_block, key_bytes);
-        for (size_t i = 0; i < aes::block_t_size; i++) {
-          block[i] ^= idx_block[i];
-        }
-      }
-    );
+    aes_ctr_encrypt(input, output, key_bytes);
   } else {
     TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
   }
@@ -510,30 +534,12 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 // Let's assume that input and output have integral dtype, so there is no transform for now.
 Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string cipher, std::string mode) {
 //  TORCH_CHECK(input.numel() * input.itemsize() == output.numel() * output.itemsize(), "input and output tensors must have the same size in byte");
-  if (cipher == "aes128") {
-    TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
-  } else {
-    TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
-  }
+  check_cipher(cipher, key);
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
   if (mode == "ecb") {
-    block_cipher<aes::block_t_size>(input, output,
-      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
-        aes::decrypt(block, key_bytes);
-      }
-    );
+    aes_ecb_decrypt(input, output, key_bytes);
   } else if (mode == "ctr") {
-    block_cipher<aes::block_t_size>(input, output,
-      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
-        uint8_t idx_block[aes::block_t_size];
-        std::memset(&idx_block, 0, aes::block_t_size);
-        *(reinterpret_cast<int64_t*>(idx_block)) = idx;
-        aes::encrypt(idx_block, key_bytes);
-        for (size_t i = 0; i < aes::block_t_size; i++) {
-          block[i] ^= idx_block[i];
-        }
-      }
-    );
+    aes_ctr_decrypt(input, output, key_bytes);
   } else {
     TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
   }
