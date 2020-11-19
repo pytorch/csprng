@@ -404,6 +404,9 @@ class TestCSPRNG(unittest.TestCase):
                                         self.assertFalse(np.array_equal(initial_np, decrypted_np))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
+                                    if padding_size_bytes != 0:
+                                        decrypted_np = decrypted_np[:padding_size_bytes]
 
                                     self.assertTrue(np.array_equal(initial_np, decrypted_np))
 
