@@ -67,17 +67,17 @@ at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generato
   if (gen->key().defined()) {
     return gen->key().clone();
   }
-  auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  using random_t = uint32_t;
+  auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
+  using random_t = typename std::result_of<decltype(&RNG::random)(RNG)>::type;
   constexpr size_t random_t_size = sizeof(random_t);
   for (size_t i = 0; i < block_t_size / random_t_size; i++) {
     const auto rand = gen->random();
     for (size_t j = 0; j < random_t_size; j++) {
       size_t k = i * random_t_size + j;
-      t[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
+      key[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
     }
   }
-  return t;
+  return key;
 }
 
 template<typename RNG>

@@ -131,14 +131,8 @@ void block_cipher(
   if (output_ptr == nullptr || output_numel == 0) {
     return;
   }
-//  TORCH_CHECK((input_numel * input_type_size + block_size - 1) / block_size * block_size == output_numel * output_type_size, "wrong size");
-
-//  const auto size_in_bytes = input_numel * input_type_size;
-//  const auto size_in_bytes = output_numel * output_type_size;
 
   if (device.type() == at::kCPU) {
-//    const auto total = (size_in_bytes + block_size - 1) / block_size;
-//    const auto total = (size_in_bytes + block_size / N - 1) / block_size * N;
     const auto total = (output_numel + output_elem_per_block - 1) / output_elem_per_block;
     block_cipher_kernel_cpu<block_size>(total,
         cipher, output_elem_per_block,
