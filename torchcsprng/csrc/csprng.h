@@ -542,7 +542,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string ciphe
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
   TORCH_CHECK(output_size_bytes == input_size_bytes, "input and output tensors must have the same size in byte");
-  TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes without reminder");
+  TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes");
   check_cipher(cipher, key);
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
   if (mode == "ecb") {
