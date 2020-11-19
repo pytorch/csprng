@@ -63,15 +63,7 @@ namespace aes {
     #define Nr 10       // The number of rounds in AES Cipher.
 #endif
 
-#if !defined(__CUDACC__) && !defined(__HIPCC__)
-struct ulonglong2 // TODO: should have something like `__builtin_align__(16)`
-{
-  unsigned long long int x, y;
-};
-#endif
-
-typedef ulonglong2 block_t;
-constexpr size_t block_t_size = sizeof(block_t);
+constexpr size_t block_t_size = 16;
 
 typedef uint8_t state_t[4][4];
 
