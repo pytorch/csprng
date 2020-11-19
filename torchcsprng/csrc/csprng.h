@@ -112,7 +112,7 @@ private:
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
 void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
-  const auto output = iter.tensor(0);
+  auto output = iter.tensor(0);
   const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
   const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
     return output_offset_calc.get(li)[0];
