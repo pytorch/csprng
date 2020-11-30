@@ -516,7 +516,6 @@ void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
   aes_ctr_encrypt(input, output, key_bytes);
 }
 
-// Let's assume that input and output have integral dtype, so there is no transform for now.
 Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
   TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
@@ -538,8 +537,7 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
   return output;
 }
 
-// Let's assume that input and output have integral dtype, so there is no transform for now.
-Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, std::string cipher, std::string mode) {
+Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
   TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();

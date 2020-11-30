@@ -37,7 +37,7 @@ TORCH_CSPRNG_HOST_DEVICE static void copy_input_to_block(int64_t idx, uint8_t* b
     const auto linear_index = idx * (block_size / input_type_size) + i;
     if (linear_index < input_numel) {
       std::memcpy(
-          &(block[i * input_type_size]),
+          block + i * input_type_size,
           &(reinterpret_cast<uint8_t*>(input_ptr)[input_index_calc(linear_index)]),
           input_type_size
       );
@@ -53,7 +53,7 @@ TORCH_CSPRNG_HOST_DEVICE static void copy_block_to_output(int64_t idx, uint8_t* 
     if (linear_index < output_numel) {
       std::memcpy(
           &(reinterpret_cast<uint8_t*>(output_ptr)[output_index_calc(linear_index)]),
-          &(block[i * output_type_size]),
+          block + i * output_type_size,
           output_type_size
       );
     }
