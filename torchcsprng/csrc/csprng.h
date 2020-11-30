@@ -557,7 +557,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // ====================================================================================================================
 
-Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
+TORCH_CSPRNG_HOST Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
   if (token.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*token);
   } else {
