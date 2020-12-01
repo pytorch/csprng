@@ -57,12 +57,49 @@ struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
   Tensor key_;
 };
 
+// Generates `block_t_size`-bytes random key Tensor on CPU
+// using `generator`, which must be an instance of `at::CPUGeneratorImpl`
+// and passes it to the `device`.
+template<typename RNG>
+at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
+  std::lock_guard<std::mutex> lock(generator->mutex());
+  auto gen = at::check_generator<RNG>(generator);
+  if (gen->key().defined()) {
+    return gen->key().clone();
+  }
+  auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
+  using random_t = typename std::result_of<decltype(&RNG::random)(RNG)>::type;
+  constexpr size_t random_t_size = sizeof(random_t);
+  for (size_t i = 0; i < block_t_size / random_t_size; i++) {
+    const auto rand = gen->random();
+    for (size_t j = 0; j < random_t_size; j++) {
+      size_t k = i * random_t_size + j;
+      key[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
+    }
+  }
+  return key;
+}
+
 template<typename RNG>
 Tensor aes128_key_tensor(Generator generator) {
   return key_tensor<RNG>(aes::block_t_size, generator);
 }
 
 // ====================================================================================================================
+
+// A simple container for random state sub-blocks that implements RNG interface
+// with random() and random64() methods, that are used by transformation function
+template<size_t size>
+struct RNGValues {
+  TORCH_CSPRNG_HOST_DEVICE RNGValues(uint64_t* vals) {
+    memcpy(&vals_, vals, size * sizeof(uint64_t));
+  }
+  uint32_t TORCH_CSPRNG_HOST_DEVICE random() { auto res = static_cast<uint32_t>(vals_[index]); index++; return res; }
+  uint64_t TORCH_CSPRNG_HOST_DEVICE random64() { auto res = vals_[index]; index++; return res; }
+private:
+  uint64_t vals_[size];
+  int index = 0;
+};
 
 // Applies AES in CTR mode with the `key` for passed TensorIterator iter.
 // `scalar_t`       is a scalar type equivalent of target tensor dtype
@@ -74,16 +111,37 @@ Tensor aes128_key_tensor(Generator generator) {
 // `key`            is a CUDA pointer to random key memory block
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
-void aes_helper(TensorIterator& iter, const uint8_t* key, transform_t transform_func) {
-  block_cipher_ctr_mode<scalar_t, uint_t, N>(iter, aes::block_t_size,
-    [key] TORCH_CSPRNG_HOST_DEVICE (unsigned int idx) -> aes::block_t {
-      aes::block_t block;
-      memset(&block, 0, aes::block_t_size);
-      block.x = idx;
-      aes::encrypt(reinterpret_cast<uint8_t*>(&block), key);
-      return block;
+void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
+  auto output = iter.tensor(0);
+  const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
+  const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return output_offset_calc.get(li)[0];
+  };
+  block_cipher<aes::block_t_size>(
+    nullptr, 0, 0, output_index_calc,
+    output.data_ptr(), output.numel(), output.element_size(), output_index_calc,
+    iter.device_type(),
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      uint8_t idx_block[aes::block_t_size];
+      std::memset(&idx_block, 0, aes::block_t_size);
+      *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+      aes::encrypt(idx_block, key_bytes);
+      for (size_t i = 0; i < aes::block_t_size; i++) {
+        block[i] ^= idx_block[i];
+      }
     },
-    transform_func
+    aes::block_t_size / (N * sizeof(uint_t)),
+    [transform_func] TORCH_CSPRNG_HOST_DEVICE (uint8_t* block) {
+      const auto n = aes::block_t_size / (N * sizeof(uint_t));
+      for (size_t i = 0; i < n; ++i) {
+        uint64_t vals[N];
+        for (size_t j = 0; j < N; ++j) {
+          vals[j] = (reinterpret_cast<uint_t*>(block))[N * i + j];
+        }
+        RNGValues<N> rng(vals);
+        reinterpret_cast<scalar_t*>(block)[i] = transform_func(&rng);
+      }
+    }
   );
 }
 
@@ -151,7 +209,7 @@ struct RandomFromToKernel {
         std::is_same<scalar_t, int64_t>::value ||
         std::is_same<scalar_t, double>::value ||
         std::is_same<scalar_t, float>::value ||
-        std::is_same<scalar_t, at::BFloat16>::value) && range >= 1ULL << 32)
+        std::is_same<scalar_t, at::BFloat16>::value)/* TODO: && range >= 1ULL << 32*/)
       {
         random_from_to_kernel_helper<scalar_t, uint64_t>(iter, range, base, key);
       } else {
@@ -416,6 +474,89 @@ Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generato
 
 // ====================================================================================================================
 
+void check_cipher(const std::string& cipher, Tensor key) {
+  if (cipher == "aes128") {
+    TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
+  }
+}
+
+void aes_ecb_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::encrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ecb_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::decrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ctr_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      uint8_t idx_block[aes::block_t_size];
+      std::memset(&idx_block, 0, aes::block_t_size);
+      *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+      aes::encrypt(idx_block, key_bytes);
+      for (size_t i = 0; i < aes::block_t_size; i++) {
+        block[i] ^= idx_block[i];
+      }
+    }
+  );
+}
+
+void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  aes_ctr_encrypt(input, output, key_bytes);
+}
+
+Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+  TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
+  const auto output_size_bytes = output.numel() * output.itemsize();
+  const auto input_size_bytes = input.numel() * input.itemsize();
+  const auto input_size_bytes_rounded = (input_size_bytes + aes::block_t_size - 1) / aes::block_t_size * aes::block_t_size;
+  TORCH_CHECK(output_size_bytes == input_size_bytes_rounded,
+              "output size in bytes(", output_size_bytes,
+              ") is not equal to input size in bytes rounded to block size(",
+              input_size_bytes_rounded, ")");
+  check_cipher(cipher, key);
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    aes_ecb_encrypt(input, output, key_bytes);
+  } else if (mode == "ctr") {
+    aes_ctr_encrypt(input, output, key_bytes);
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
+
+Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+  TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
+  const auto output_size_bytes = output.numel() * output.itemsize();
+  const auto input_size_bytes = input.numel() * input.itemsize();
+  TORCH_CHECK(output_size_bytes == input_size_bytes, "input and output tensors must have the same size in byte");
+  TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes");
+  check_cipher(cipher, key);
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    aes_ecb_decrypt(input, output, key_bytes);
+  } else if (mode == "ctr") {
+    aes_ctr_decrypt(input, output, key_bytes);
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
+
+// ====================================================================================================================
+
 Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
   if (token.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*token);
@@ -481,4 +622,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
   m.def("aes128_key_tensor", &aes128_key_tensor_pybind);
   m.def("create_const_generator", &create_const_generator);
+  m.def("encrypt", &encrypt_pybind);
+  m.def("decrypt", &decrypt_pybind);
 }
