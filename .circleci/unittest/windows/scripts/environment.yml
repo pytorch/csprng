@@ -1,4 +1,5 @@
 channels:
+  - pytorch
   - defaults
 dependencies:
   - numpy
@@ -9,6 +10,4 @@ dependencies:
   - ca-certificates
   - pip:
       - future
-      - pillow>=4.1.1
-      - scipy==1.4.1
-      - av
+      - scipy
