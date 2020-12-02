@@ -30,141 +30,173 @@
 namespace torch {
 namespace csprng {
 
-// Generates `block_t_size`-bytes random key Tensor on CPU 
-// using `generator`, which must be an instance of `at::CPUGeneratorImpl`
-// and passes it to the `device`.
-template<typename RNG>
-at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
-  std::lock_guard<std::mutex> lock(generator->mutex());
-  auto gen = at::check_generator<RNG>(generator);
-  auto t = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  using random_t = uint32_t;
-  constexpr size_t random_t_size = sizeof(random_t);
-  for (size_t i = 0; i < block_t_size / random_t_size; i++) {
-    const auto rand = gen->random();
-    for (size_t j = 0; j < random_t_size; j++) {
-      size_t k = i * random_t_size + j;
-      t[k] = static_cast<uint8_t>((rand >> (j * 8)) & 0xff);
+template<typename input_index_calc_t>
+TORCH_CSPRNG_HOST_DEVICE static void copy_input_to_block(int64_t idx, uint8_t* block, int block_size,
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc) {
+  for (auto i = 0; i < block_size / input_type_size; ++i) {
+    const auto linear_index = idx * (block_size / input_type_size) + i;
+    if (linear_index < input_numel) {
+      std::memcpy(
+          block + i * input_type_size,
+          &(reinterpret_cast<uint8_t*>(input_ptr)[input_index_calc(linear_index)]),
+          input_type_size
+      );
     }
   }
-  return t;
 }
 
-// A simple container for random state sub-blocks that implements RNG interface 
-// with random() and random64() methods, that are used by transformation function
-template<size_t size>
-struct RNGValues {
-  TORCH_CSPRNG_HOST_DEVICE RNGValues(uint64_t* vals) {
-    memcpy(&vals_, vals, size * sizeof(uint64_t));
-  }
-  uint32_t TORCH_CSPRNG_HOST_DEVICE random() { auto res = static_cast<uint32_t>(vals_[index]); index++; return res; }
-  uint64_t TORCH_CSPRNG_HOST_DEVICE random64() { auto res = vals_[index]; index++; return res; }
-private:
-  uint64_t vals_[size];
-  int index = 0;
-};
-
-// Runs a block cipher in a counter mode in approximately `numel / (block_t_size / sizeof(uint_t) / N)` CUDA threads,
-// without any assumption about target tensor layout. It uses `index_calc` to find memory locations of
-// the tensor elements.
-// `scalar_t`       is a scalar type equivalent of target tensor dtype
-// `uint_t`         is an unsigned integral type of sub-blocks that random state is divided to
-//                  (e.g, 16 bytes random state block can be divided into 16 uint8_t sub-blocks 
-//                  or 8 uint16_t sub-block or 4 uint32_t sub-block or 2 uint64_t sub-blocks)
-// `N`              is a number of sub-block which is used by `transform_func` 
-//                  to generate a random value of specific distribution (e.g. `normal` uses 2)
-// `numel`          is a number of elements in target tensor
-// `block_t_size`   is a number of bytes in cipher's block (e.g. 16 for AES128)
-// `cipher`         is a callable that receives a counter `idx` and returns an encrypted block
-// `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
-template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(int idx, scalar_t* data, int64_t numel, size_t block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
-  const int unroll_factor = block_t_size / sizeof(uint_t) / N;
-  if (unroll_factor * idx < numel) {
-    auto block = cipher(idx);
-    UNROLL_IF_CUDA
-    for (auto i = 0; i < unroll_factor; ++i) {
-      const auto li = unroll_factor * idx + i;
-      if (li < numel) {
-        uint64_t vals[N];
-        UNROLL_IF_CUDA
-        for (size_t j = 0; j < N; j++) {
-          vals[j] = (reinterpret_cast<uint_t*>(&block))[N * i + j];
-        }
-        RNGValues<N> rng(vals);
-        data[index_calc(li)] = transform_func(&rng);
-      }
+template<typename output_index_calc_t>
+TORCH_CSPRNG_HOST_DEVICE static void copy_block_to_output(int64_t idx, uint8_t* block, int output_elem_per_block,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc) {
+  for (auto i = 0; i < output_elem_per_block; ++i) {
+    const auto linear_index = idx * output_elem_per_block + i;
+    if (linear_index < output_numel) {
+      std::memcpy(
+          &(reinterpret_cast<uint8_t*>(output_ptr)[output_index_calc(linear_index)]),
+          block + i * output_type_size,
+          output_type_size
+      );
     }
   }
+}
+
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+TORCH_CSPRNG_HOST_DEVICE static void block_cipher_kernel_helper(
+    int64_t idx, cipher_t cipher, int output_elem_per_block,
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
+    transform_t transform) {
+  uint8_t block[block_size];
+  std::memset(&block, 0, block_size); // is it ok to use zeros as padding?
+  if (input_ptr != nullptr) {
+    copy_input_to_block(idx, block, block_size, input_ptr, input_numel, input_type_size, input_index_calc);
+  }
+  cipher(idx, block);
+  transform(block);
+  copy_block_to_output(idx, block, output_elem_per_block, output_ptr, output_numel, output_type_size, output_index_calc);
 }
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
-template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-__global__ static void block_cipher_kernel_cuda(scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+__global__ static void block_cipher_kernel_cuda(cipher_t cipher, int output_elem_per_block,
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
+    transform_t transform) {
   const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-  block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
+  block_cipher_kernel_helper<block_size>(idx, cipher, output_elem_per_block,
+    input_ptr, input_numel, input_type_size, input_index_calc,
+    output_ptr, output_numel, output_type_size, output_index_calc,
+    transform);
 }
 #endif
 
-template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+static void block_cipher_kernel_cpu_serial(int64_t begin, int64_t end, cipher_t cipher, int output_elem_per_block,
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
+    transform_t transform) {
   for (auto idx = begin; idx < end; ++idx) {
-    block_cipher_kernel_helper<scalar_t, uint_t, N>(idx, data, numel, block_t_size, cipher, transform_func, index_calc);
+    block_cipher_kernel_helper<block_size>(idx, cipher, output_elem_per_block,
+      input_ptr, input_numel, input_type_size, input_index_calc,
+      output_ptr, output_numel, output_type_size, output_index_calc,
+      transform);
   }
 }
 
-template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t, typename index_calc_t>
-static void block_cipher_kernel_cpu(int64_t total, scalar_t* data, int64_t numel, int block_t_size, cipher_t cipher, transform_t transform_func, index_calc_t index_calc) {
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+static void block_cipher_kernel_cpu(int64_t total, cipher_t cipher, int output_elem_per_block,
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
+    transform_t transform_func) {
   if (total < at::internal::GRAIN_SIZE || at::get_num_threads() == 1) {
-    block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(0, total, data, numel, block_t_size, cipher, transform_func, index_calc);
+    block_cipher_kernel_cpu_serial<block_size>(0, total, cipher, output_elem_per_block,
+      input_ptr, input_numel, input_type_size, input_index_calc,
+      output_ptr, output_numel, output_type_size, output_index_calc,
+      transform_func);
   } else {
     at::parallel_for(0, total, at::internal::GRAIN_SIZE, [&](int64_t begin, int64_t end) {
-      block_cipher_kernel_cpu_serial<scalar_t, uint_t, N>(begin, end, data, numel, block_t_size, cipher, transform_func, index_calc);
+      block_cipher_kernel_cpu_serial<block_size>(begin, end, cipher, output_elem_per_block,
+        input_ptr, input_numel, input_type_size, input_index_calc,
+        output_ptr, output_numel, output_type_size, output_index_calc,
+        transform_func);
     });
   }
 }
 
-// Runs a block cipher in a counter mode in approximately `numel / (block_t_size / sizeof(uint_t) / N)` CUDA threads.
-// Each CUDA thread generates `block_t_size`-bytes random state and divides it into `block_t_size / sizeof(uint_t)` sub-blocks.
-// Then `transform_func` transforms `N` random state sub-blocks passed in a `RNGValues` to final random values of type `scalar_t`.
-template<typename scalar_t, typename uint_t, size_t N = 1, typename cipher_t, typename transform_t>
-void block_cipher_ctr_mode(at::TensorIterator& iter, int block_t_size, cipher_t cipher, transform_t transform_func) {
-  const auto numel = iter.numel();
-  if (numel == 0) {
+template<int block_size, typename cipher_t, typename input_index_calc_t, typename output_index_calc_t, typename transform_t>
+void block_cipher(
+    void* input_ptr, int64_t input_numel, int input_type_size, input_index_calc_t input_index_calc,
+    void* output_ptr, int64_t output_numel, int output_type_size, output_index_calc_t output_index_calc,
+    Device device, cipher_t cipher, int output_elem_per_block, transform_t transform_func) {
+  if (output_ptr == nullptr || output_numel == 0) {
     return;
   }
-  const int unroll_factor = block_t_size / sizeof(uint_t) / N;
-  const auto block = 256;
-  const auto grid = (numel + (block * unroll_factor) - 1) / (block * unroll_factor);
-  scalar_t* data = (scalar_t*)iter.data_ptr(0);
-  auto offset_calc = make_offset_calculator<1>(iter);
-  auto index_calc_identity = [] TORCH_CSPRNG_HOST_DEVICE (int li) -> int { return li; };
-  auto index_calc_offset = [offset_calc] TORCH_CSPRNG_HOST_DEVICE (int li) -> int { return offset_calc.get(li)[0] / sizeof(scalar_t); };
-  if (iter.device_type() == at::kCPU) {
-    if (iter.output(0).is_contiguous()) {
-      block_cipher_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(
-        grid * block, data, numel, block_t_size, cipher, transform_func, index_calc_identity);
-    } else {
-      block_cipher_kernel_cpu<scalar_t, uint_t, N, cipher_t, transform_t>(
-        grid * block, data, numel, block_t_size, cipher, transform_func, index_calc_offset);
-    }
-  } else if (iter.device_type() == at::kCUDA) {
+
+  if (device.type() == at::kCPU) {
+    const auto total = (output_numel + output_elem_per_block - 1) / output_elem_per_block;
+    block_cipher_kernel_cpu<block_size>(total,
+        cipher, output_elem_per_block,
+        input_ptr, input_numel, input_type_size, input_index_calc,
+        output_ptr, output_numel, output_type_size, output_index_calc,
+        transform_func
+    );
+  } else if (device.type() == at::kCUDA) {
 #if defined(__CUDACC__) || defined(__HIPCC__)
+    const auto threads = 256;
+    const auto grid = (output_numel + (threads * output_elem_per_block) - 1) / (threads * output_elem_per_block);
     auto stream = at::cuda::getCurrentCUDAStream();
-    if (iter.output(0).is_contiguous()) {
-      block_cipher_kernel_cuda<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(
-        data, numel, block_t_size, cipher, transform_func, index_calc_identity);
-    } else {
-      block_cipher_kernel_cuda<scalar_t, uint_t, N, cipher_t, transform_t><<<grid, block, 0, stream>>>(
-        data, numel, block_t_size, cipher, transform_func, index_calc_offset);
-    }
+    block_cipher_kernel_cuda<block_size><<<grid, threads, 0, stream>>>(
+        cipher, output_elem_per_block,
+        input_ptr, input_numel, input_type_size, input_index_calc,
+        output_ptr, output_numel, output_type_size, output_index_calc,
+        transform_func
+    );
     AT_CUDA_CHECK(cudaGetLastError());
 #else
-    TORCH_CHECK(false, "csprng was compiled without CUDA support");
+    TORCH_CHECK(false, "torchcsprng was compiled without CUDA support");
 #endif
   } else {
-    TORCH_CHECK(false, "block_cipher_ctr_mode supports only CPU and CUDA devices");
+    TORCH_CHECK(false, "block_cipher supports only CPU and CUDA devices");
   }
+}
+
+template<int block_size, typename cipher_t>
+void block_cipher(Tensor input, Tensor output, cipher_t cipher) {
+  const auto input_ptr = input.data_ptr();
+  const auto input_numel = input.numel();
+
+  // Otherwise OffsetCalculator/IntDivider crashes with integer division by zero
+  if (input_ptr == nullptr || input_numel == 0) {
+    return;
+  }
+
+  const auto input_type_size = input.element_size();
+  const auto input_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(input));
+  const auto input_index_calc = [input_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return input_offset_calc.get(li)[0];
+  };
+
+  const auto output_ptr = output.data_ptr();
+  const auto output_numel = output.numel();
+
+  // Otherwise OffsetCalculator/IntDivider crashes with integer division by zero
+  if (output_ptr == nullptr || output_numel == 0) {
+    return;
+  }
+
+  const auto output_type_size = output.element_size();
+  const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
+  const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
+    return output_offset_calc.get(li)[0];
+  };
+
+  const auto device = output.device();
+
+  block_cipher<block_size>(
+      input_ptr, input_numel, input_type_size, input_index_calc,
+      output_ptr, output_numel, output_type_size, output_index_calc,
+      device, cipher, block_size / output_type_size,
+      [] TORCH_CSPRNG_HOST_DEVICE (uint8_t* x) {});
 }
 
 }}
