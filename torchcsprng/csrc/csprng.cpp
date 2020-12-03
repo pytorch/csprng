@@ -29,7 +29,7 @@ Tensor& random_(Tensor& self, c10::optional<Generator> gen) {
     return cpu::random_(self, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::random_(self, gen);
+    return torch::csprng::cuda::random_(self, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -42,7 +42,7 @@ Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to,
     return cpu::random_from_to(self, from, to, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::random_from_to(self, from, to, gen);
+    return torch::csprng::cuda::random_from_to(self, from, to, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -55,7 +55,7 @@ Tensor& random_to(Tensor& self, int64_t to,
     return cpu::random_to(self, to, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::random_to(self, to, gen);
+    return torch::csprng::cuda::random_to(self, to, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -69,7 +69,7 @@ Tensor& uniform_(Tensor& self, double from, double to, c10::optional<Generator> 
     return cpu::uniform_(self, from, to, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::uniform_(self, from, to, gen);
+    return torch::csprng::cuda::uniform_(self, from, to, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -83,7 +83,7 @@ Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> 
     return cpu::normal_(self, mean, std, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::normal_(self, mean, std, gen);
+    return torch::csprng::cuda::normal_(self, mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -95,7 +95,7 @@ Tensor& normal_Tensor_float_out(Tensor& output, const Tensor& mean, double std, 
     return cpu::normal_Tensor_float_out(output, mean, std, gen);
 #ifdef WITH_CUDA
   } else if (output.device().type() == DeviceType::CUDA) {
-    return cuda::normal_Tensor_float_out(output, mean, std, gen);
+    return torch::csprng::cuda::normal_Tensor_float_out(output, mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -107,7 +107,7 @@ Tensor& normal_float_Tensor_out(Tensor& output, double mean, const Tensor& std, 
     return cpu::normal_float_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
   } else if (output.device().type() == DeviceType::CUDA) {
-    return cuda::normal_float_Tensor_out(output, mean, std, gen);
+    return torch::csprng::cuda::normal_float_Tensor_out(output, mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -119,7 +119,7 @@ Tensor& normal_Tensor_Tensor_out(Tensor& output, const Tensor& mean, const Tenso
     return cpu::normal_Tensor_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
   } else if (output.device().type() == DeviceType::CUDA) {
-    return cuda::normal_Tensor_Tensor_out(output, mean, std, gen);
+    return torch::csprng::cuda::normal_Tensor_Tensor_out(output, mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -131,7 +131,7 @@ Tensor normal_Tensor_float(const Tensor& mean, double std, c10::optional<Generat
     return cpu::normal_Tensor_float(mean, std, gen);
 #ifdef WITH_CUDA
   } else if (mean.device().type() == DeviceType::CUDA) {
-    return cuda::normal_Tensor_float(mean, std, gen);
+    return torch::csprng::cuda::normal_Tensor_float(mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -143,7 +143,7 @@ Tensor normal_float_Tensor(double mean, const Tensor& std, c10::optional<Generat
     return cpu::normal_float_Tensor(mean, std, gen);
 #ifdef WITH_CUDA
   } else if (std.device().type() == DeviceType::CUDA) {
-    return cuda::normal_float_Tensor(mean, std, gen);
+    return torch::csprng::cuda::normal_float_Tensor(mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -155,7 +155,7 @@ Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, c10::optional
     return cpu::normal_Tensor_Tensor(mean, std, gen);
 #ifdef WITH_CUDA
   } else if (mean.device().type() == DeviceType::CUDA) {
-    return cuda::normal_Tensor_Tensor(mean, std, gen);
+    return torch::csprng::cuda::normal_Tensor_Tensor(mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -168,8 +168,8 @@ Tensor& cauchy_(Tensor& self, double median, double sigma, c10::optional<Generat
   if (self.device().type() == DeviceType::CPU) {
     return cpu::cauchy_(self, median, sigma, gen);
 #ifdef WITH_CUDA
-    } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::cauchy_(self, median, sigma, gen);
+  } else if (self.device().type() == DeviceType::CUDA) {
+    return torch::csprng::cuda::cauchy_(self, median, sigma, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -183,7 +183,7 @@ Tensor& log_normal_(Tensor& self, double mean, double std, c10::optional<Generat
     return cpu::log_normal_(self, mean, std, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::log_normal_(self, mean, std, gen);
+    return torch::csprng::cuda::log_normal_(self, mean, std, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -197,7 +197,7 @@ Tensor& geometric_(Tensor& self, double p, c10::optional<Generator> gen) {
     return cpu::geometric_(self, p, gen);
 #ifdef WITH_CUDA
   } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::geometric_(self, p, gen);
+    return torch::csprng::cuda::geometric_(self, p, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
@@ -210,8 +210,8 @@ Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) 
   if (self.device().type() == DeviceType::CPU) {
     return cpu::exponential_(self, lambda, gen);
 #ifdef WITH_CUDA
-    } else if (self.device().type() == DeviceType::CUDA) {
-    return cuda::exponential_(self, lambda, gen);
+  } else if (self.device().type() == DeviceType::CUDA) {
+    return torch::csprng::cuda::exponential_(self, lambda, gen);
 #endif
   } else {
     TORCH_CHECK(false, "generator doesn't support tensor device type");
