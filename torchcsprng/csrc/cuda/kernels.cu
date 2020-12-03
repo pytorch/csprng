@@ -11,7 +11,7 @@
 
 namespace torch {
 namespace csprng {
-namespace cpu {
+namespace cuda {
 
 #include "../kernels_body.inc"
 
