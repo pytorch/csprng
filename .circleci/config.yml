@@ -880,28 +880,28 @@ workflows:
           cu_version: cpu
           name: unittest_windows_cpu_py3.8
           python_version: '3.8'
-#      - unittest_windows_gpu:
-#          cu_version: cu101
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - nightly
-#          name: unittest_windows_gpu_py3.6
-#          python_version: '3.6'
-#      - unittest_windows_gpu:
-#          cu_version: cu101
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - nightly
-#          name: unittest_windows_gpu_py3.7
-#          python_version: '3.7'
-#      - unittest_windows_gpu:
-#          cu_version: cu101
-#          name: unittest_windows_gpu_py3.8
-#          python_version: '3.8'
+      - unittest_windows_gpu:
+          cu_version: cu101
+          filters:
+            branches:
+              only:
+                - master
+                - nightly
+          name: unittest_windows_gpu_py3.6
+          python_version: '3.6'
+      - unittest_windows_gpu:
+          cu_version: cu101
+          filters:
+            branches:
+              only:
+                - master
+                - nightly
+          name: unittest_windows_gpu_py3.7
+          python_version: '3.7'
+      - unittest_windows_gpu:
+          cu_version: cu101
+          name: unittest_windows_gpu_py3.8
+          python_version: '3.8'
   nightly:
     jobs:
 #      - circleci_consistency

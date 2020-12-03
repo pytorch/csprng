@@ -70,9 +70,20 @@ def get_extensions():
 
     openmp = 'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
 
+    main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
+    source_cuda = glob.glob(os.path.join(extensions_dir, '*.cu'))
+
+    sources = main_file
+    extension = CppExtension
+
+    define_macros = []
+
     if build_cuda:
-        sources = [os.path.join(extensions_dir, 'csprng.cu')]
         extension = CUDAExtension
+        sources += source_cuda
+
+        define_macros += [('WITH_CUDA', None)]
+
         nvcc_flags = os.getenv('NVCC_FLAGS', '')
         if nvcc_flags == '':
             nvcc_flags = []
@@ -89,8 +100,6 @@ def get_extensions():
             'nvcc': nvcc_flags,
         }
     else:
-        sources = [os.path.join(extensions_dir, 'csprng.cpp')]
-        extension = CppExtension
         cxx_flags = os.getenv('CXX_FLAGS', '')
         if cxx_flags == '':
             cxx_flags = []
@@ -109,6 +118,7 @@ def get_extensions():
         extension(
             module_name + '._C',
             sources,
+            define_macros=define_macros,
             extra_compile_args=extra_compile_args,
         )
     ]
