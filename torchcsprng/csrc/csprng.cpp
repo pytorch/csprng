@@ -13,7 +13,8 @@
 #include <ATen/Tensor.h>
 #include <ATen/core/op_registration/op_registration.h>
 
-#include "kernels.h"
+#include "kernels_commons.h"
+#include "cpu/kernels.h"
 #ifdef WITH_CUDA
 #include "kernels.cuh"
 #endif

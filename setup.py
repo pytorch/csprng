@@ -71,15 +71,16 @@ def get_extensions():
     openmp = 'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
 
     main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
-    source_cuda = glob.glob(os.path.join(extensions_dir, '*.cu'))
+    source_cpu = glob.glob(os.path.join(extensions_dir, 'cpu', '*.cpp'))
 
-    sources = main_file
+    sources = main_file + source_cpu
     extension = CppExtension
 
     define_macros = []
 
     if build_cuda:
         extension = CUDAExtension
+        source_cuda = glob.glob(os.path.join(extensions_dir, 'cuda', '*.cu'))
         sources += source_cuda
 
         define_macros += [('WITH_CUDA', None)]

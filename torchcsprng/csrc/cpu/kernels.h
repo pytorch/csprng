@@ -6,13 +6,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include "kernels_header.h"
-#include "kernels_commons.h"
+#pragma once
+
+#include <ATen/Generator.h>
+#include <ATen/Tensor.h>
 
 namespace torch {
 namespace csprng {
 namespace cpu {
 
-#include "kernels_body.h"
+#include "../kernels_decls.h"
 
 }}}

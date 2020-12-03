@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include "kernels_commons.h"
+#include <ATen/Generator.h>
+#include <ATen/Tensor.h>
 
 namespace torch {
 namespace csprng {
-namespace cpu {
+namespace cuda {
 
-#include "kernels_decls.h"
+#include "../kernels_decls.h"
 
 }}}
