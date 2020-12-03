@@ -15,6 +15,6 @@ namespace torch {
 namespace csprng {
 namespace cpu {
 
-#include "../kernels_decls.h"
+#include "../kernels_decls.inc"
 
 }}}

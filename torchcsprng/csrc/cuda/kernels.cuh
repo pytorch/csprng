@@ -15,6 +15,6 @@ namespace torch {
 namespace csprng {
 namespace cuda {
 
-#include "../kernels_decls.h"
+#include "../kernels_decls.inc"
 
 }}}

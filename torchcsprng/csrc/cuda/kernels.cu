@@ -13,6 +13,6 @@ namespace torch {
 namespace csprng {
 namespace cpu {
 
-#include "../kernels_body.h"
+#include "../kernels_body.inc"
 
 }}}

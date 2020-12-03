@@ -6,8 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#pragma once
-
 // ==================================================== Random ========================================================
 
 at::Tensor& random_(at::Tensor& self, c10::optional<at::Generator> generator);
