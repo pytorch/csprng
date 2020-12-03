@@ -16,7 +16,7 @@
 #include "kernels_commons.h"
 #include "cpu/kernels.h"
 #ifdef WITH_CUDA
-#include "kernels.cuh"
+#include "cuda/kernels.cuh"
 #endif
 
 using namespace at;
