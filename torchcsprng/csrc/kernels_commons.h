@@ -13,7 +13,7 @@
 #include <ATen/Tensor.h>
 #include <ATen/core/DistributionsHelper.h>
 #include <ATen/native/DistributionTemplates.h>
-#include <torch/torch.h>
+#include <torch/utils.h>
 #include "macros.h"
 #include "block_cipher.h"
 
