@@ -5,6 +5,5 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-del torch
 
 from torchcsprng._C import *
