@@ -309,9 +309,9 @@ class TestCSPRNG(unittest.TestCase):
         time_for_1K = measure(1000)
         time_for_1M = measure(1000000)
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
-        print('torch.get_num_threads() =', torch.get_num_threads())
-        print('time_for_1K =', time_for_1K)
-        print('time_for_1M =', time_for_1M)
+        # print('torch.get_num_threads() =', torch.get_num_threads())
+        # print('time_for_1K =', time_for_1K)
+        # print('time_for_1M =', time_for_1M)
         self.assertTrue(False)
         self.assertTrue(time_for_1M/time_for_1K < 1000 / 1.5)
 
