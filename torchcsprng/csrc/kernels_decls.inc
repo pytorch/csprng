@@ -49,3 +49,9 @@ at::Tensor& geometric_(at::Tensor& self, double p, c10::optional<at::Generator> 
 // ================================================== Exponential =====================================================
 
 at::Tensor& exponential_(at::Tensor& self, double lambda, c10::optional<at::Generator> gen);
+
+// ================================================Encrypt/Decrypt=====================================================
+
+Tensor encrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode);
+
+Tensor decrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode);

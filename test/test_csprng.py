@@ -11,11 +11,15 @@ import numpy as np
 import math
 import random
 import time
+import os
 
 try:
     import torchcsprng as csprng
 except ImportError:
     raise RuntimeError("CSPRNG not available")
+
+IS_SANDCASTLE = os.getenv('SANDCASTLE') == '1' or os.getenv('TW_JOB_USER') == 'sandcastle'
+IS_FBCODE = os.getenv('PYTORCH_TEST_FBCODE') == '1'
 
 class TestCSPRNG(unittest.TestCase):
 
@@ -297,7 +301,7 @@ class TestCSPRNG(unittest.TestCase):
         def measure(size):
             t = torch.empty(size, dtype=torch.float32, device='cpu')
             start = time.time()
-            for i in range(10):
+            for i in range(30):
                 t.normal_(generator=urandom_gen)
             finish = time.time()
             return finish - start
@@ -305,100 +309,81 @@ class TestCSPRNG(unittest.TestCase):
         time_for_1K = measure(1000)
         time_for_1M = measure(1000000)
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
-        self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
+        self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, max(1, torch.get_num_threads())))
 
-    @unittest.skip("Temporary disable because doesn't work on Sandcastle")
+    @unittest.skipIf(IS_SANDCASTLE or IS_FBCODE, "Does not work on Sandcastle")
     def test_version(self):
         import torchcsprng.version as version
         self.assertTrue(version.__version__)
         self.assertTrue(version.git_version)
 
-    # def test_randperm(self):
-    #     for device in self.all_devices:
-    #         for gen in self.all_generators:
-    #             for dtype in self.int_dtypes:
-    #                 for size in range(0, 20):
-    #                     expected = torch.arange(size, dtype=dtype, device=device)
-    #
-    #                     actual = torch.randperm(size, dtype=dtype, device=device, generator=gen)
-    #
-    #                     actual_out = torch.empty(1, dtype=dtype, device=device)
-    #                     torch.randperm(size, out=actual_out, generator=gen)
-    #
-    #                     if size >= 10:
-    #                         self.assertTrue(not torch.allclose(expected, actual))
-    #                         self.assertTrue(not torch.allclose(expected, actual_out))
-    #
-    #                     actual = actual.sort()[0]
-    #                     actual_out = actual.sort()[0]
-    #
-    #                     self.assertTrue(torch.allclose(expected, actual))
-    #                     self.assertTrue(torch.allclose(expected, actual_out))
-    #
-    # def test_aes128_key_tensor(self):
-    #     size = 10
-    #     for gen in self.all_generators:
-    #         s = set()
-    #         for _ in range(0, size):
-    #             t = csprng.aes128_key_tensor(gen)
-    #             s.add(str(t))
-    #         self.assertEqual(len(s), size)
-    #
-    # def test_const_generator(self):
-    #     for device in self.all_devices:
-    #         for gen in self.all_generators:
-    #             for dtype in self.int_dtypes:
-    #                 key = csprng.aes128_key_tensor(gen)
-    #                 const_gen = csprng.create_const_generator(key)
-    #                 first = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
-    #                 second = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
-    #                 self.assertTrue((first - second).max().abs() == 0)
-    #
-    # def test_encrypt_decrypt(self):
-    #     key_size_bytes = 16
-    #     block_size_bytes = 16
-    #
-    #     def sizeof(dtype):
-    #         if dtype == torch.bool:
-    #             return 1
-    #         elif dtype.is_floating_point:
-    #             return torch.finfo(dtype).bits // 8
-    #         else:
-    #             return torch.iinfo(dtype).bits // 8
-    #
-    #     for device in self.all_devices:
-    #         for key_dtype in self.all_dtypes:
-    #             key_size = key_size_bytes // sizeof(key_dtype)
-    #             key = torch.empty(key_size, dtype=key_dtype, device=device).random_()
-    #             for initial_dtype in self.all_dtypes:
-    #                 for encrypted_dtype in self.all_dtypes:
-    #                     for decrypted_dtype in self.all_dtypes:
-    #                         for initial_size in [0, 4, 8, 15, 16, 23, 42]:
-    #                             for mode in ["ecb", "ctr"]:
-    #                                 encrypted_size = (initial_size * sizeof(initial_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
-    #                                 decrypted_size = (encrypted_size * sizeof(encrypted_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(decrypted_dtype)
-    #
-    #                                 initial = torch.empty(initial_size, dtype=initial_dtype, device=device).random_()
-    #                                 encrypted = torch.empty(encrypted_size, dtype=encrypted_dtype, device=device).random_()
-    #                                 decrypted = torch.empty(decrypted_size, dtype=decrypted_dtype, device=device).random_()
-    #
-    #                                 initial_np = initial.cpu().numpy().view(np.int8)
-    #                                 decrypted_np = decrypted.cpu().numpy().view(np.int8)
-    #                                 padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
-    #                                 if padding_size_bytes != 0:
-    #                                     decrypted_np = decrypted_np[:padding_size_bytes]
-    #
-    #                                 csprng.encrypt(initial, encrypted, key, "aes128", mode)
-    #
-    #                                 if initial_size > 8:
-    #                                     self.assertFalse(np.array_equal(initial_np, decrypted_np))
-    #
-    #                                 csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
-    #                                 decrypted_np = decrypted.cpu().numpy().view(np.int8)
-    #                                 if padding_size_bytes != 0:
-    #                                     decrypted_np = decrypted_np[:padding_size_bytes]
-    #
-    #                                 self.assertTrue(np.array_equal(initial_np, decrypted_np))
+    def test_randperm(self):
+        for device in self.all_devices:
+            for gen in self.all_generators:
+                for dtype in self.int_dtypes:
+                    for size in range(0, 20):
+                        expected = torch.arange(size, dtype=dtype, device=device)
+
+                        actual = torch.randperm(size, dtype=dtype, device=device, generator=gen)
+
+                        actual_out = torch.empty(1, dtype=dtype, device=device)
+                        torch.randperm(size, out=actual_out, generator=gen)
+
+                        if size >= 10:
+                            self.assertTrue(not torch.allclose(expected, actual))
+                            self.assertTrue(not torch.allclose(expected, actual_out))
+
+                        actual = actual.sort()[0]
+                        actual_out = actual.sort()[0]
+
+                        self.assertTrue(torch.allclose(expected, actual))
+                        self.assertTrue(torch.allclose(expected, actual_out))
+
+    def test_encrypt_decrypt(self):
+        key_size_bytes = 16
+        block_size_bytes = 16
+
+        def sizeof(dtype):
+            if dtype == torch.bool:
+                return 1
+            elif dtype.is_floating_point:
+                return torch.finfo(dtype).bits // 8
+            else:
+                return torch.iinfo(dtype).bits // 8
+
+        for device in self.all_devices:
+            for key_dtype in self.all_dtypes:
+                key_size = key_size_bytes // sizeof(key_dtype)
+                key = torch.empty(key_size, dtype=key_dtype, device=device).random_()
+                for initial_dtype in self.all_dtypes:
+                    for encrypted_dtype in self.all_dtypes:
+                        for decrypted_dtype in self.all_dtypes:
+                            for initial_size in [0, 4, 8, 15, 16, 23, 42]:
+                                for mode in ["ecb", "ctr"]:
+                                    encrypted_size = (initial_size * sizeof(initial_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
+                                    decrypted_size = (encrypted_size * sizeof(encrypted_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(decrypted_dtype)
+
+                                    initial = torch.empty(initial_size, dtype=initial_dtype, device=device).random_()
+                                    encrypted = torch.empty(encrypted_size, dtype=encrypted_dtype, device=device).random_()
+                                    decrypted = torch.empty(decrypted_size, dtype=decrypted_dtype, device=device).random_()
+
+                                    initial_np = initial.cpu().numpy().view(np.int8)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
+                                    padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
+                                    if padding_size_bytes != 0:
+                                        decrypted_np = decrypted_np[:padding_size_bytes]
+
+                                    csprng.encrypt(initial, encrypted, key, "aes128", mode)
+
+                                    if initial_size > 8:
+                                        self.assertFalse(np.array_equal(initial_np, decrypted_np))
+
+                                    csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
+                                    if padding_size_bytes != 0:
+                                        decrypted_np = decrypted_np[:padding_size_bytes]
+
+                                    self.assertTrue(np.array_equal(initial_np, decrypted_np))
 
 if __name__ == '__main__':
     unittest.main()

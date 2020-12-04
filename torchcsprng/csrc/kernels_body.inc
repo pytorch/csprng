@@ -353,3 +353,86 @@ struct ExponentialKernel {
 at::Tensor& exponential_(at::Tensor& self, double lambda, c10::optional<at::Generator> gen) {
   return at::native::templates::exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
 }
+
+// ================================================Encrypt/Decrypt=====================================================
+
+void check_cipher(const std::string& cipher, Tensor key) {
+  if (cipher == "aes128") {
+    TORCH_CHECK(key.element_size() * key.numel() == 16, "key tensor must have 16 bytes(128 bits)");
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"aes128\" cipher, \"", cipher, "\" is not supported.");
+  }
+}
+
+void aes_ecb_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::encrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ecb_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      aes::decrypt(block, key_bytes);
+    }
+  );
+}
+
+void aes_ctr_encrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  block_cipher<aes::block_t_size>(input, output,
+    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+      uint8_t idx_block[aes::block_t_size];
+      std::memset(&idx_block, 0, aes::block_t_size);
+      *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+      aes::encrypt(idx_block, key_bytes);
+      for (size_t i = 0; i < aes::block_t_size; i++) {
+        block[i] ^= idx_block[i];
+      }
+    }
+  );
+}
+
+void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
+  aes_ctr_encrypt(input, output, key_bytes);
+}
+
+Tensor encrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+  TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
+  const auto output_size_bytes = output.numel() * output.itemsize();
+  const auto input_size_bytes = input.numel() * input.itemsize();
+  const auto input_size_bytes_rounded = (input_size_bytes + aes::block_t_size - 1) / aes::block_t_size * aes::block_t_size;
+  TORCH_CHECK(output_size_bytes == input_size_bytes_rounded,
+              "output size in bytes(", output_size_bytes,
+              ") is not equal to input size in bytes rounded to block size(",
+              input_size_bytes_rounded, ")");
+  check_cipher(cipher, key);
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    aes_ecb_encrypt(input, output, key_bytes);
+  } else if (mode == "ctr") {
+    aes_ctr_encrypt(input, output, key_bytes);
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
+
+Tensor decrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+  TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
+  const auto output_size_bytes = output.numel() * output.itemsize();
+  const auto input_size_bytes = input.numel() * input.itemsize();
+  TORCH_CHECK(output_size_bytes == input_size_bytes, "input and output tensors must have the same size in byte");
+  TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes");
+  check_cipher(cipher, key);
+  const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
+  if (mode == "ecb") {
+    aes_ecb_decrypt(input, output, key_bytes);
+  } else if (mode == "ctr") {
+    aes_ctr_decrypt(input, output, key_bytes);
+  } else {
+    TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
+  }
+  return output;
+}
