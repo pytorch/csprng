@@ -215,6 +215,7 @@ class TestCSPRNG(unittest.TestCase):
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').exponential_(lambd=lambd, generator=gen)
+                print('(cpu_t - cuda_t.cpu()).abs().max() =', (cpu_t - cuda_t.cpu()).abs().max())
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_cauchy_kstest(self):
