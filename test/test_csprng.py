@@ -208,6 +208,7 @@ class TestCSPRNG(unittest.TestCase):
                         self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skip("https://github.com/pytorch/pytorch/issues/38662")
     def test_exponential_cpu_vs_cuda(self):
         for dtype in self.fp_ftypes:
             for lambd in [0.5, 1.0, 5.0]:
@@ -215,9 +216,6 @@ class TestCSPRNG(unittest.TestCase):
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').exponential_(lambd=lambd, generator=gen)
-                print('cpu_t =', cpu_t)
-                print('cuda_t =', cuda_t)
-                print('(cpu_t - cuda_t.cpu()).abs().max() =', (cpu_t - cuda_t.cpu()).abs().max())
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_cauchy_kstest(self):
