@@ -8,9 +8,14 @@
 
 #pragma once
 
+#include <random>
 #include <ATen/Generator.h>
 #include <ATen/Tensor.h>
-#include <random>
+#include <ATen/core/DistributionsHelper.h>
+#include <ATen/native/DistributionTemplates.h>
+#include <torch/torch.h>
+#include "macros.h"
+#include "block_cipher.h"
 
 inline uint64_t make64BitsFrom32Bits(uint32_t hi, uint32_t lo) {
   return (static_cast<uint64_t>(hi) << 32) | lo;

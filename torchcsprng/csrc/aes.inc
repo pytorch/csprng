@@ -6,13 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#pragma once
-
-#include "macros.h"
-#include <cstdint>
-
-namespace torch {
-namespace csprng {
 namespace aes {
 
 // This AES implementation is based on
@@ -393,4 +386,4 @@ TORCH_CSPRNG_HOST_DEVICE void decrypt(uint8_t* state, const uint8_t* key) {
   }
 }
 
-}}}
+}
