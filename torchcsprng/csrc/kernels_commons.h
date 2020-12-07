@@ -26,11 +26,9 @@ struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
   CSPRNGGeneratorImpl(bool use_rd)              : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, use_rd_{use_rd} {}
   CSPRNGGeneratorImpl(const std::string& token) : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, use_rd_{true}, rd_{token} {}
   CSPRNGGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} { }
-  CSPRNGGeneratorImpl(at::Tensor key)               : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, key_(key) {}
   ~CSPRNGGeneratorImpl() = default;
   uint32_t random() { return use_rd_ ? rd_() : mt_(); }
   uint64_t random64() { return use_rd_ ? make64BitsFrom32Bits(rd_(), rd_()) : make64BitsFrom32Bits(mt_(), mt_()); }
-  const at::Tensor& key() const { return key_; };
 
   void set_current_seed(uint64_t seed) override { throw std::runtime_error("not implemented"); }
   uint64_t current_seed() const override { throw std::runtime_error("not implemented"); }
@@ -42,5 +40,4 @@ struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
   bool use_rd_;
   std::random_device rd_;
   std::mt19937 mt_;
-  at::Tensor key_;
 };
