@@ -11,11 +11,15 @@ import numpy as np
 import math
 import random
 import time
+import os
 
 try:
     import torchcsprng as csprng
 except ImportError:
     raise RuntimeError("CSPRNG not available")
+
+IS_SANDCASTLE = os.getenv('SANDCASTLE') == '1' or os.getenv('TW_JOB_USER') == 'sandcastle'
+IS_FBCODE = os.getenv('PYTORCH_TEST_FBCODE') == '1'
 
 class TestCSPRNG(unittest.TestCase):
 
@@ -204,6 +208,7 @@ class TestCSPRNG(unittest.TestCase):
                         self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skip("https://github.com/pytorch/pytorch/issues/38662")
     def test_exponential_cpu_vs_cuda(self):
         for dtype in self.fp_ftypes:
             for lambd in [0.5, 1.0, 5.0]:
@@ -305,9 +310,9 @@ class TestCSPRNG(unittest.TestCase):
         time_for_1K = measure(1000)
         time_for_1M = measure(1000000)
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
-        self.assertTrue(time_for_1M/time_for_1K < 1000 / min(1.5, torch.get_num_threads()))
+        self.assertTrue(time_for_1M/time_for_1K < 1000 / 1.5)
 
-    @unittest.skip("Temporary disable because doesn't work on Sandcastle")
+    @unittest.skipIf(IS_SANDCASTLE or IS_FBCODE, "Does not work on Sandcastle")
     def test_version(self):
         import torchcsprng.version as version
         self.assertTrue(version.__version__)
@@ -334,25 +339,6 @@ class TestCSPRNG(unittest.TestCase):
 
                         self.assertTrue(torch.allclose(expected, actual))
                         self.assertTrue(torch.allclose(expected, actual_out))
-
-    def test_aes128_key_tensor(self):
-        size = 10
-        for gen in self.all_generators:
-            s = set()
-            for _ in range(0, size):
-                t = csprng.aes128_key_tensor(gen)
-                s.add(str(t))
-            self.assertEqual(len(s), size)
-
-    def test_const_generator(self):
-        for device in self.all_devices:
-            for gen in self.all_generators:
-                for dtype in self.int_dtypes:
-                    key = csprng.aes128_key_tensor(gen)
-                    const_gen = csprng.create_const_generator(key)
-                    first = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
-                    second = torch.empty(self.size, dtype=dtype, device=device).random_(generator=const_gen)
-                    self.assertTrue((first - second).max().abs() == 0)
 
     def test_encrypt_decrypt(self):
         key_size_bytes = 16
@@ -389,9 +375,6 @@ class TestCSPRNG(unittest.TestCase):
                                         decrypted_np = decrypted_np[:padding_size_bytes]
 
                                     csprng.encrypt(initial, encrypted, key, "aes128", mode)
-
-                                    if initial_size > 8:
-                                        self.assertFalse(np.array_equal(initial_np, decrypted_np))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
                                     decrypted_np = decrypted.cpu().numpy().view(np.int8)

@@ -70,45 +70,52 @@ def get_extensions():
 
     openmp = 'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
 
+    main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
+    source_cpu = glob.glob(os.path.join(extensions_dir, 'cpu', '*.cpp'))
+
+    sources = main_file + source_cpu
+    extension = CppExtension
+
+    define_macros = []
+
+    cxx_flags = os.getenv('CXX_FLAGS', '')
+    if cxx_flags == '':
+        cxx_flags = []
+    else:
+        cxx_flags = cxx_flags.split(' ')
+    if openmp:
+        if sys.platform == 'linux':
+            cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
+        elif sys.platform == 'win32':
+            cxx_flags = append_flags(cxx_flags, ['/openmp'])
+
     if build_cuda:
-        sources = [os.path.join(extensions_dir, 'csprng.cu')]
         extension = CUDAExtension
+        source_cuda = glob.glob(os.path.join(extensions_dir, 'cuda', '*.cu'))
+        sources += source_cuda
+
+        define_macros += [('WITH_CUDA', None)]
+
         nvcc_flags = os.getenv('NVCC_FLAGS', '')
         if nvcc_flags == '':
             nvcc_flags = []
         else:
             nvcc_flags = nvcc_flags.split(' ')
         nvcc_flags = append_flags(nvcc_flags, ['--expt-extended-lambda', '-Xcompiler'])
-        if openmp:
-            if sys.platform == 'linux':
-                nvcc_flags = append_flags(nvcc_flags, ['-fopenmp'])
-            elif sys.platform == 'win32':
-                nvcc_flags = append_flags(nvcc_flags, ['/openmp'])
         extra_compile_args = {
-            'cxx': [],
+            'cxx': cxx_flags,
             'nvcc': nvcc_flags,
         }
     else:
-        sources = [os.path.join(extensions_dir, 'csprng.cpp')]
-        extension = CppExtension
-        cxx_flags = os.getenv('CXX_FLAGS', '')
-        if cxx_flags == '':
-            cxx_flags = []
-        else:
-            cxx_flags = cxx_flags.split(' ')
-        if openmp:
-            if sys.platform == 'linux':
-                cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
-            elif sys.platform == 'win32':
-                cxx_flags = append_flags(cxx_flags, ['/openmp'])
         extra_compile_args = {
-            'cxx': cxx_flags
+            'cxx': cxx_flags,
         }
 
     ext_modules = [
         extension(
             module_name + '._C',
             sources,
+            define_macros=define_macros,
             extra_compile_args=extra_compile_args,
         )
     ]

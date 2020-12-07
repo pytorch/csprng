@@ -6,4 +6,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include "csprng.h"
+#include "../kernels_commons.h"
+
+namespace torch {
+namespace csprng {
+namespace cpu {
+
+#include "../kernels_body.inc"
+
+}}}
