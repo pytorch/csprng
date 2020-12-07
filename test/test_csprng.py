@@ -376,9 +376,6 @@ class TestCSPRNG(unittest.TestCase):
 
                                     csprng.encrypt(initial, encrypted, key, "aes128", mode)
 
-                                    if initial_size > 8:
-                                        self.assertFalse(np.array_equal(initial_np, decrypted_np))
-
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
                                     decrypted_np = decrypted.cpu().numpy().view(np.int8)
                                     if padding_size_bytes != 0:
