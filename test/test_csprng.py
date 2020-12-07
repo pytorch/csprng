@@ -302,7 +302,7 @@ class TestCSPRNG(unittest.TestCase):
         def measure(size):
             t = torch.empty(size, dtype=torch.float32, device='cpu')
             start = time.time()
-            for i in range(30):
+            for i in range(10):
                 t.normal_(generator=urandom_gen)
             finish = time.time()
             return finish - start
