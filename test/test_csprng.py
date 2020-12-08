@@ -12,6 +12,8 @@ import math
 import random
 import time
 import os
+from Crypto.Cipher import AES
+from Crypto.Util import Counter
 
 try:
     import torchcsprng as csprng
@@ -352,6 +354,12 @@ class TestCSPRNG(unittest.TestCase):
             else:
                 return torch.iinfo(dtype).bits // 8
 
+        def pad(data, pad_size):
+            if len(data) % pad_size == 0:
+                return data
+            length = pad_size - (len(data) % pad_size)
+            return data + bytes([0])*length
+
         for device in self.all_devices:
             for key_dtype in self.all_dtypes:
                 key_size = key_size_bytes // sizeof(key_dtype)
@@ -369,6 +377,7 @@ class TestCSPRNG(unittest.TestCase):
                                     decrypted = torch.empty(decrypted_size, dtype=decrypted_dtype, device=device).random_()
 
                                     initial_np = initial.cpu().numpy().view(np.int8)
+                                    encrypted_np = encrypted.cpu().numpy().view(np.int8)
                                     decrypted_np = decrypted.cpu().numpy().view(np.int8)
                                     padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
                                     if padding_size_bytes != 0:
@@ -376,11 +385,33 @@ class TestCSPRNG(unittest.TestCase):
 
                                     csprng.encrypt(initial, encrypted, key, "aes128", mode)
 
+                                    if mode == "ecb":
+                                        aes = AES.new(key.cpu().numpy().tobytes(), AES.MODE_ECB)
+                                    elif mode == "ctr":
+                                        ctr = Counter.new(AES.block_size * 8, initial_value=0, little_endian=True)
+                                        aes = AES.new(key.cpu().numpy().tobytes(), AES.MODE_CTR, counter=ctr)
+                                    else:
+                                        aes = None
+
+                                    encrypted_expected = np.frombuffer(aes.encrypt(pad(initial_np.tobytes(), 16)), dtype=np.int8)
+                                    self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
+
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
                                     decrypted_np = decrypted.cpu().numpy().view(np.int8)
+
+                                    if mode == "ecb":
+                                        aes = AES.new(key.cpu().numpy().tobytes(), AES.MODE_ECB)
+                                    elif mode == "ctr":
+                                        ctr = Counter.new(AES.block_size * 8, initial_value=0, little_endian=True)
+                                        aes = AES.new(key.cpu().numpy().tobytes(), AES.MODE_CTR, counter=ctr)
+                                    else:
+                                        aes = None
+
+                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), 16)), dtype=np.int8)
+                                    self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
+
                                     if padding_size_bytes != 0:
                                         decrypted_np = decrypted_np[:padding_size_bytes]
-
                                     self.assertTrue(np.array_equal(initial_np, decrypted_np))
 
 if __name__ == '__main__':

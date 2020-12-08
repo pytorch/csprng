@@ -45,6 +45,7 @@ build:
 #  requires:
 #    - pytest
 #    - scipy
+#    - pycrypto
 #  commands:
 #    pytest . --verbose
 

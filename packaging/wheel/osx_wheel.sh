@@ -41,7 +41,7 @@ do
     echo "Building against ${TORCHAUDIO_PYTORCH_DEPENDENCY_VERSION}"
 
     # install torchcsprng dependencies
-    pip install ninja scipy pytest
+    pip install ninja scipy pytest pycrypto
 
     python setup.py clean
     python setup.py bdist_wheel
