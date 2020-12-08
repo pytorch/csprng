@@ -394,6 +394,8 @@ class TestCSPRNG(unittest.TestCase):
                                         aes = None
 
                                     encrypted_expected = np.frombuffer(aes.encrypt(pad(initial_np.tobytes(), 16)), dtype=np.int8)
+                                    print(encrypted_np)
+                                    print(encrypted_expected)
                                     self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
