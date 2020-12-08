@@ -6,56 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#pragma once
-#include <torch/extension.h>
-#include <torch/library.h>
-#include <ATen/Generator.h>
-#include <ATen/Tensor.h>
-#include <ATen/native/DistributionTemplates.h>
-#include <ATen/core/op_registration/op_registration.h>
-#include <ATen/core/DistributionsHelper.h>
-#include <memory>
-#include <random>
-#include "macros.h"
-#include "block_cipher.h"
-#include "aes.h"
-
-#if defined(__CUDACC__) || defined(__HIPCC__)
-#include <c10/cuda/CUDAStream.h>
-#include <ATen/cuda/Exceptions.h>
-#endif
-
-using namespace at;
-using namespace at::native::templates;
-using namespace torch::csprng;
-
-inline uint64_t make64BitsFrom32Bits(uint32_t hi, uint32_t lo) {
-  return (static_cast<uint64_t>(hi) << 32) | lo;
-}
-
-// CUDA CSPRNG is actually CPU generator which is used only to generate a random key on CPU for AES running in a block mode on CUDA 
-struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
-  CSPRNGGeneratorImpl(bool use_rd)              : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{use_rd} {}
-  CSPRNGGeneratorImpl(const std::string& token) : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{true}, rd_{token} {}
-  CSPRNGGeneratorImpl(uint64_t seed)            : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, use_rd_{false}, mt_{static_cast<unsigned int>(seed)} { }
-  CSPRNGGeneratorImpl(Tensor key)               : c10::GeneratorImpl{Device(DeviceType::CPU), DispatchKeySet(DispatchKey::CustomRNGKeyId)}, key_(key) {}
-  ~CSPRNGGeneratorImpl() = default;
-  uint32_t random() { return use_rd_ ? rd_() : mt_(); }
-  uint64_t random64() { return use_rd_ ? make64BitsFrom32Bits(rd_(), rd_()) : make64BitsFrom32Bits(mt_(), mt_()); }
-  const Tensor& key() const { return key_; };
-
-  void set_current_seed(uint64_t seed) override { throw std::runtime_error("not implemented"); }
-  uint64_t current_seed() const override { throw std::runtime_error("not implemented"); }
-  uint64_t seed() override { throw std::runtime_error("not implemented"); }
-  CSPRNGGeneratorImpl* clone_impl() const override { throw std::runtime_error("not implemented"); }
-
-  static DeviceType device_type() { return DeviceType::CPU; }
-
-  bool use_rd_;
-  std::random_device rd_;
-  std::mt19937 mt_;
-  Tensor key_;
-};
+#include "aes.inc"
 
 // Generates `block_t_size`-bytes random key Tensor on CPU
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`
@@ -64,9 +15,6 @@ template<typename RNG>
 at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
-  if (gen->key().defined()) {
-    return gen->key().clone();
-  }
   auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
   using random_t = typename std::result_of<decltype(&RNG::random)(RNG)>::type;
   constexpr size_t random_t_size = sizeof(random_t);
@@ -81,8 +29,8 @@ at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generato
 }
 
 template<typename RNG>
-Tensor aes128_key_tensor(Generator generator) {
-  return key_tensor<RNG>(aes::block_t_size, generator);
+at::Tensor aes128_key_tensor(at::Generator generator) {
+      return key_tensor<RNG>(aes::block_t_size, generator);
 }
 
 // ====================================================================================================================
@@ -104,44 +52,44 @@ private:
 // Applies AES in CTR mode with the `key` for passed TensorIterator iter.
 // `scalar_t`       is a scalar type equivalent of target tensor dtype
 // `uint_t`         is an unsigned integral type of sub-blocks that random state is divided to
-//                  (e.g, 16 bytes random state block can be divided into 16 uint8_t sub-blocks 
+//                  (e.g, 16 bytes random state block can be divided into 16 uint8_t sub-blocks
 //                  or 8 uint16_t sub-block or 4 uint32_t sub-block or 2 uint64_t sub-blocks)
-// `N`              is a number of sub-block which is used by `transform_func` 
+// `N`              is a number of sub-block which is used by `transform_func`
 //                  to generate a random value of specific distribution (e.g. `normal` uses 2)
 // `key`            is a CUDA pointer to random key memory block
 // `transform_func` is a callable that converts N `uint_t` random state sub-blocks passed in RNGValues into target dtype `scalar_t`
 template<typename scalar_t, typename uint_t, size_t N = 1, typename transform_t>
-void aes_helper(TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
+void aes_helper(at::TensorIterator& iter, const uint8_t* key_bytes, transform_t transform_func) {
   auto output = iter.tensor(0);
-  const auto output_offset_calc = make_offset_calculator<1>(TensorIterator::nullary_op(output));
+  const auto output_offset_calc = make_offset_calculator<1>(at::TensorIterator::nullary_op(output));
   const auto output_index_calc = [output_offset_calc] TORCH_CSPRNG_HOST_DEVICE (uint32_t li) -> uint32_t {
-    return output_offset_calc.get(li)[0];
+      return output_offset_calc.get(li)[0];
   };
-  block_cipher<aes::block_t_size>(
-    nullptr, 0, 0, output_index_calc,
-    output.data_ptr(), output.numel(), output.element_size(), output_index_calc,
-    iter.device_type(),
-    [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
-      uint8_t idx_block[aes::block_t_size];
-      std::memset(&idx_block, 0, aes::block_t_size);
-      *(reinterpret_cast<int64_t*>(idx_block)) = idx;
-      aes::encrypt(idx_block, key_bytes);
-      for (size_t i = 0; i < aes::block_t_size; i++) {
-        block[i] ^= idx_block[i];
+  torch::csprng::block_cipher<aes::block_t_size>(
+      nullptr, 0, 0, output_index_calc,
+      output.data_ptr(), output.numel(), output.element_size(), output_index_calc,
+      iter.device_type(),
+      [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
+          uint8_t idx_block[aes::block_t_size];
+          std::memset(&idx_block, 0, aes::block_t_size);
+          *(reinterpret_cast<int64_t*>(idx_block)) = idx;
+          aes::encrypt(idx_block, key_bytes);
+          for (size_t i = 0; i < aes::block_t_size; i++) {
+            block[i] ^= idx_block[i];
+          }
+      },
+      aes::block_t_size / (N * sizeof(uint_t)),
+  [transform_func] TORCH_CSPRNG_HOST_DEVICE (uint8_t* block) {
+    const auto n = aes::block_t_size / (N * sizeof(uint_t));
+    for (size_t i = 0; i < n; ++i) {
+      uint64_t vals[N];
+      for (size_t j = 0; j < N; ++j) {
+        vals[j] = (reinterpret_cast<uint_t*>(block))[N * i + j];
       }
-    },
-    aes::block_t_size / (N * sizeof(uint_t)),
-    [transform_func] TORCH_CSPRNG_HOST_DEVICE (uint8_t* block) {
-      const auto n = aes::block_t_size / (N * sizeof(uint_t));
-      for (size_t i = 0; i < n; ++i) {
-        uint64_t vals[N];
-        for (size_t j = 0; j < N; ++j) {
-          vals[j] = (reinterpret_cast<uint_t*>(block))[N * i + j];
-        }
-        RNGValues<N> rng(vals);
-        reinterpret_cast<scalar_t*>(block)[i] = transform_func(&rng);
-      }
+      RNGValues<N> rng(vals);
+      reinterpret_cast<scalar_t*>(block)[i] = transform_func(&rng);
     }
+  }
   );
 }
 
@@ -234,15 +182,15 @@ struct RandomFromToKernel {
   }
 };
 
-Tensor& random_(Tensor& self, c10::optional<Generator> generator) {
-  return random_impl<RandomKernel, CSPRNGGeneratorImpl>(self, generator);
+at::Tensor& random_(at::Tensor& self, c10::optional<at::Generator> generator) {
+  return at::native::templates::random_impl<RandomKernel, CSPRNGGeneratorImpl>(self, generator);
 }
 
-Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to, c10::optional<Generator> generator) {
-  return random_from_to_impl<RandomFromToKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
+at::Tensor& random_from_to(at::Tensor& self, int64_t from, c10::optional<int64_t> to, c10::optional<at::Generator> generator) {
+  return at::native::templates::random_from_to_impl<RandomFromToKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
-Tensor& random_to(Tensor& self, int64_t to, c10::optional<Generator> generator) {
+at::Tensor& random_to(at::Tensor& self, int64_t to, c10::optional<at::Generator> generator) {
   return random_from_to(self, 0, to, generator);
 }
 
@@ -264,8 +212,8 @@ struct UniformKernel {
   }
 };
 
-Tensor& uniform_(Tensor& self, double from, double to, c10::optional<Generator> generator) {
-  return uniform_impl_<UniformKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
+at::Tensor& uniform_(at::Tensor& self, double from, double to, c10::optional<at::Generator> generator) {
+  return at::native::templates::uniform_impl_<UniformKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
 // ==================================================== Normal ========================================================
@@ -287,32 +235,32 @@ struct NormalKernel {
   }
 };
 
-Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> generator) {
-  return normal_impl_<NormalKernel, CSPRNGGeneratorImpl>(self, mean, std, generator);
+at::Tensor& normal_(at::Tensor& self, double mean, double std, c10::optional<at::Generator> generator) {
+  return at::native::templates::normal_impl_<NormalKernel, CSPRNGGeneratorImpl>(self, mean, std, generator);
 }
 
-Tensor& normal_Tensor_float_out(Tensor& output, const Tensor& mean, double std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
+at::Tensor& normal_Tensor_float_out(at::Tensor& output, const at::Tensor& mean, double std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-Tensor& normal_float_Tensor_out(Tensor& output, double mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
+at::Tensor& normal_float_Tensor_out(at::Tensor& output, double mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-Tensor& normal_Tensor_Tensor_out(Tensor& output, const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
+at::Tensor& normal_Tensor_Tensor_out(at::Tensor& output, const at::Tensor& mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-Tensor normal_Tensor_float(const Tensor& mean, double std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
+at::Tensor normal_Tensor_float(const at::Tensor& mean, double std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
-Tensor normal_float_Tensor(double mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
+at::Tensor normal_float_Tensor(double mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
-Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
-  return normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
+at::Tensor normal_Tensor_Tensor(const at::Tensor& mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+  return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
 // ==================================================== Cauchy ========================================================
@@ -333,8 +281,8 @@ struct CauchyKernel {
   }
 };
 
-Tensor& cauchy_(Tensor& self, double median, double sigma, c10::optional<Generator> generator) {
-  return cauchy_impl_<CauchyKernel, CSPRNGGeneratorImpl>(self, median, sigma, generator);
+at::Tensor& cauchy_(at::Tensor& self, double median, double sigma, c10::optional<at::Generator> generator) {
+  return at::native::templates::cauchy_impl_<CauchyKernel, CSPRNGGeneratorImpl>(self, median, sigma, generator);
 }
 
 // ================================================== LogNormal =======================================================
@@ -355,8 +303,8 @@ struct LogNormalKernel {
   }
 };
 
-Tensor& log_normal_(Tensor& self, double mean, double std, c10::optional<Generator> gen) {
-  return log_normal_impl_<LogNormalKernel, CSPRNGGeneratorImpl>(self, mean, std, gen);
+at::Tensor& log_normal_(at::Tensor& self, double mean, double std, c10::optional<at::Generator> gen) {
+  return at::native::templates::log_normal_impl_<LogNormalKernel, CSPRNGGeneratorImpl>(self, mean, std, gen);
 }
 
 // ================================================== Geometric =======================================================
@@ -377,8 +325,8 @@ struct GeometricKernel {
   }
 };
 
-Tensor& geometric_(Tensor& self, double p, c10::optional<Generator> gen) {
-  return geometric_impl_<GeometricKernel, CSPRNGGeneratorImpl>(self, p, gen);
+at::Tensor& geometric_(at::Tensor& self, double p, c10::optional<at::Generator> gen) {
+  return at::native::templates::geometric_impl_<GeometricKernel, CSPRNGGeneratorImpl>(self, p, gen);
 }
 
 // ================================================== Exponential =====================================================
@@ -399,80 +347,11 @@ struct ExponentialKernel {
   }
 };
 
-Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) {
-  return exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
+at::Tensor& exponential_(at::Tensor& self, double lambda, c10::optional<at::Generator> gen) {
+  return at::native::templates::exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
 }
 
-// =============================================== Random permutation =================================================
-
-// randperm implementation was copied from PyTorch to unblock CSPRNG users, but ultimately CSPRNG must reuse
-// refactored randperm from PyTorch, see https://github.com/pytorch/pytorch/issues/43816
-
-namespace {
-
-  inline void check_supported_max_int_with_precision(int64_t n, const Tensor& tensor) {
-    TORCH_CHECK(at::scalar_tensor(n, tensor.options()).defined(),
-                "n is too large for result tensor type: '", tensor.toString(), "'");
-
-    // Ensure sufficient precision for floating point representation.
-    switch (tensor.scalar_type()) {
-      case at::ScalarType::Half:
-        TORCH_CHECK(n <= (int64_t(1) << 11) + 1, "n cannot be greater than 2049 for Half type.");
-        break;
-      case at::ScalarType::Float:
-        TORCH_CHECK(n <= (int64_t(1) << 24) + 1, "n cannot be greater than 2^24+1 for Float type.");
-        break;
-      case at::ScalarType::Double:  // Unlikely to happen, but doesn't hurt to check
-        TORCH_CHECK(n <= (int64_t(1) << 53) + 1, "n cannot be greater than 2^53+1 for Double type.");
-        break;
-      default:
-        break;
-    }
-  }
-
-  template <typename scalar_t, typename RNG>
-  void randperm(Tensor& result, int64_t n, c10::optional<at::Generator> generator) {
-    auto gen = at::check_generator<RNG>(generator);
-    scalar_t *r__data = result.data_ptr<scalar_t>();
-
-    result.resize_({n});
-    int64_t r__stride_0 = result.stride(0);
-
-    at::parallel_for(0, n, internal::GRAIN_SIZE,
-                     [&r__data, &r__stride_0](int64_t p_begin, int64_t p_end) {
-                       for(int64_t i = p_begin; i < p_end; i++)
-                         r__data[i*r__stride_0] = static_cast<scalar_t>(i);
-                     });
-
-    for(int64_t i = 0; i < n - 1; i++)
-    {
-      int64_t z = gen->random() % (n-i);
-      scalar_t sav = r__data[i*r__stride_0];
-      r__data[i*r__stride_0] = r__data[(z+i)*r__stride_0];
-      r__data[(z+i)*r__stride_0] = sav;
-    }
-  }
-} // namespace
-
-Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generator> generator) {
-  TORCH_CHECK(n >= 0, "n must be non-negative, got", n);
-  check_supported_max_int_with_precision(n, result);
-  if (result.device().type() == at::kCUDA) {
-    auto result_cpu = at::empty({n}, result.options().device(kCPU));
-    randperm_generator_out(result_cpu, n, generator);
-    result.resize_({n});
-    return result.copy_(result_cpu);
-  }
-  result.resize_({n});
-  // See Note [Acquire lock when using random generators]
-  std::lock_guard<std::mutex> lock(generator->mutex());
-  AT_DISPATCH_ALL_TYPES_AND(at::ScalarType::Half, result.scalar_type(), "randperm", [&]() -> void {
-    randperm<scalar_t, CSPRNGGeneratorImpl>(result, n, generator);
-  });
-  return result;
-}
-
-// ====================================================================================================================
+// ================================================Encrypt/Decrypt=====================================================
 
 void check_cipher(const std::string& cipher, Tensor key) {
   if (cipher == "aes128") {
@@ -516,7 +395,7 @@ void aes_ctr_decrypt(Tensor input, Tensor output, uint8_t* key_bytes) {
   aes_ctr_encrypt(input, output, key_bytes);
 }
 
-Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+Tensor encrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
   TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
@@ -537,7 +416,7 @@ Tensor encrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
   return output;
 }
 
-Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
+Tensor decrypt(Tensor input, Tensor output, Tensor key, const std::string& cipher, const std::string& mode) {
   TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
@@ -553,75 +432,4 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
     TORCH_CHECK(false, "encrypt/decrypt supports \"ecb\" and \"ctr\" modes, \"", mode, "\" is not supported.");
   }
   return output;
-}
-
-// ====================================================================================================================
-
-Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
-  if (token.has_value()) {
-    return make_generator<CSPRNGGeneratorImpl>(*token);
-  } else {
-    return make_generator<CSPRNGGeneratorImpl>(true);
-  }
-}
-
-Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) {
-  if (seed.has_value()) {
-    return make_generator<CSPRNGGeneratorImpl>(*seed);
-  } else {
-    return make_generator<CSPRNGGeneratorImpl>(false);
-  }
-}
-
-bool supports_cuda() {
-#if defined(__CUDACC__) || defined(__HIPCC__)
-  return true;
-#else
-  return false;
-#endif
-}
-
-Tensor aes128_key_tensor_pybind(Generator generator) {
-  return aes128_key_tensor<CSPRNGGeneratorImpl>(generator);
-}
-
-Generator create_const_generator(Tensor key) {
-  return make_generator<CSPRNGGeneratorImpl>(key);
-}
-
-TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
-  // Random
-  m.impl_UNBOXED("random_.from",             random_from_to);
-  m.impl_UNBOXED("random_.to",               random_to);
-  m.impl_UNBOXED("random_",                  random_);
-  // Uniform
-  m.impl_UNBOXED("uniform_",                 uniform_);
-  // Normal
-  m.impl_UNBOXED("normal_",                  normal_);
-  m.impl_UNBOXED("normal.Tensor_float_out",  normal_Tensor_float_out);
-  m.impl_UNBOXED("normal.float_Tensor_out",  normal_float_Tensor_out);
-  m.impl_UNBOXED("normal.Tensor_Tensor_out", normal_Tensor_Tensor_out);
-  m.impl_UNBOXED("normal.Tensor_float",      normal_Tensor_float);
-  m.impl_UNBOXED("normal.float_Tensor",      normal_float_Tensor);
-  m.impl_UNBOXED("normal.Tensor_Tensor",     normal_Tensor_Tensor);
-  // Cauchy
-  m.impl_UNBOXED("cauchy_",                  cauchy_);
-  // LogNormal
-  m.impl_UNBOXED("log_normal_",              log_normal_);
-  // Geometric
-  m.impl_UNBOXED("geometric_",               geometric_);
-  // Exponential
-  m.impl_UNBOXED("exponential_",             exponential_);
-  // Random permutation
-  m.impl_UNBOXED("randperm.generator_out",   randperm_generator_out);
-}
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("supports_cuda", &supports_cuda);
-  m.def("create_random_device_generator", &create_random_device_generator, py::arg("token") = nullptr);
-  m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
-  m.def("aes128_key_tensor", &aes128_key_tensor_pybind);
-  m.def("create_const_generator", &create_const_generator);
-  m.def("encrypt", &encrypt_pybind);
-  m.def("decrypt", &decrypt_pybind);
 }

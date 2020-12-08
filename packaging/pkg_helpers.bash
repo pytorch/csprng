@@ -132,7 +132,7 @@ setup_build_version() {
   # Set build version based on tag if on tag
   if [[ -n "${CIRCLE_TAG}" ]]; then
     # Strip tag
-    export BUILD_VERSION="$(echo "${CIRCLE_TAG}" | sed -e 's/^v//' -e 's/-.*$//')"
+    export BUILD_VERSION="$(echo "${CIRCLE_TAG}" | sed -e 's/^v//' -e 's/-.*$//')${VERSION_SUFFIX}"
   fi
 }
 
@@ -181,11 +181,7 @@ setup_wheel_python() {
     conda env remove -n "env$PYTHON_VERSION" || true
     conda create -yn "env$PYTHON_VERSION" python="$PYTHON_VERSION"
     conda activate "env$PYTHON_VERSION"
-    # Install libpng from Anaconda (defaults)
-    conda install libpng jpeg -y
   else
-    # Install native CentOS libPNG
-    yum install -y libpng-devel libjpeg-turbo-devel
     case "$PYTHON_VERSION" in
       2.7)
         if [[ -n "$UNICODE_ABI" ]]; then
@@ -203,7 +199,13 @@ setup_wheel_python() {
         exit 1
         ;;
     esac
-    export PATH="/opt/python/$python_abi/bin:$PATH"
+    # Download all the dependencies required to compile image and video_reader
+    # extensions
+
+    mkdir -p ext_libraries
+    pushd ext_libraries
+    popd
+    export PATH="/opt/python/$python_abi/bin:$(pwd)/ext_libraries/bin:$PATH"
   fi
 }
 
@@ -228,9 +230,8 @@ setup_pip_pytorch_version() {
     fi
   else
     pip_install "torch==$PYTORCH_VERSION$PYTORCH_VERSION_SUFFIX" \
-      -f https://download.pytorch.org/whl/torch_stable.html \
-      -f https://download.pytorch.org/whl/test/torch_test.html \
-      -f https://download.pytorch.org/whl/nightly/torch_nightly.html
+      -f "https://download.pytorch.org/whl/${CU_VERSION}/torch_stable.html" \
+      -f "https://download.pytorch.org/whl/${UPLOAD_CHANNEL}/${CU_VERSION}/torch_${UPLOAD_CHANNEL}.html"
   fi
 }
 
@@ -240,7 +241,7 @@ setup_pip_pytorch_version() {
 # You MUST have populated PYTORCH_VERSION_SUFFIX before hand.
 setup_conda_pytorch_constraint() {
   if [[ -z "$PYTORCH_VERSION" ]]; then
-    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly"
+    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly -c pytorch"
     export PYTORCH_VERSION="$(conda search --json 'pytorch[channel=pytorch-nightly]' | \
                               python -c "import os, sys, json, re; cuver = os.environ.get('CU_VERSION'); \
                                cuver_1 = cuver.replace('cu', 'cuda') if cuver != 'cpu' else cuver; \
@@ -255,7 +256,7 @@ setup_conda_pytorch_constraint() {
       exit 1
     fi
   else
-    export CONDA_CHANNEL_FLAGS="-c pytorch -c pytorch-nightly -c pytorch-test"
+    export CONDA_CHANNEL_FLAGS="-c pytorch -c pytorch-${UPLOAD_CHANNEL}"
   fi
   if [[ "$CU_VERSION" == cpu ]]; then
     export CONDA_PYTORCH_BUILD_CONSTRAINT="- pytorch==$PYTORCH_VERSION${PYTORCH_VERSION_SUFFIX}"
@@ -294,6 +295,39 @@ setup_conda_cudatoolkit_constraint() {
       cpu)
         export CONDA_CUDATOOLKIT_CONSTRAINT=""
         export CONDA_CPUONLY_FEATURE="- cpuonly"
+        ;;
+      *)
+        echo "Unrecognized CU_VERSION=$CU_VERSION"
+        exit 1
+        ;;
+    esac
+  fi
+}
+
+setup_conda_cudatoolkit_plain_constraint() {
+  export CONDA_CPUONLY_FEATURE=""
+  export CMAKE_USE_CUDA=1
+  if [[ "$(uname)" == Darwin ]]; then
+    export CONDA_CUDATOOLKIT_CONSTRAINT=""
+    export CMAKE_USE_CUDA=0
+  else
+    case "$CU_VERSION" in
+      cu102)
+        export CONDA_CUDATOOLKIT_CONSTRAINT="cudatoolkit=10.2"
+        ;;
+      cu101)
+        export CONDA_CUDATOOLKIT_CONSTRAINT="cudatoolkit=10.1"
+        ;;
+      cu100)
+        export CONDA_CUDATOOLKIT_CONSTRAINT="cudatoolkit=10.0"
+        ;;
+      cu92)
+        export CONDA_CUDATOOLKIT_CONSTRAINT="cudatoolkit=9.2"
+        ;;
+      cpu)
+        export CONDA_CUDATOOLKIT_CONSTRAINT=""
+        export CONDA_CPUONLY_FEATURE="cpuonly"
+        export CMAKE_USE_CUDA=0
         ;;
       *)
         echo "Unrecognized CU_VERSION=$CU_VERSION"
