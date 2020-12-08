@@ -309,10 +309,10 @@ class TestCSPRNG(unittest.TestCase):
             finish = time.time()
             return finish - start
 
-        time_for_1K = measure(1000)
+        time_for_10K = measure(10000)
         time_for_1M = measure(1000000)
         # Pessimistic check that parallel execution gives >= 1.5 performance boost
-        self.assertTrue(time_for_1M/time_for_1K < 1000 / 1.5)
+        self.assertTrue(time_for_1M/time_for_10K < 100 / 1.5)
 
     @unittest.skipIf(IS_SANDCASTLE or IS_FBCODE, "Does not work on Sandcastle")
     def test_version(self):
