@@ -395,7 +395,7 @@ class TestCSPRNG(unittest.TestCase):
 
                                     aes = create_aes(mode, key_np)
 
-                                    encrypted_expected = np.frombuffer(aes.encrypt(pad(initial_np.tobytes(), 16)), dtype=np.int8)
+                                    encrypted_expected = np.frombuffer(aes.encrypt(pad(initial_np.tobytes(), block_size_bytes)), dtype=np.int8)
                                     self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
@@ -403,7 +403,7 @@ class TestCSPRNG(unittest.TestCase):
 
                                     aes = create_aes(mode, key_np)
 
-                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), 16)), dtype=np.int8)
+                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), block_size_bytes)), dtype=np.int8)
                                     self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
 
                                     padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
