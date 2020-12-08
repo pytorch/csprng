@@ -127,7 +127,7 @@ else
 fi
 
 if [[ -z "$PYTORCH_VERSION" ]]; then
-    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly"
+    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly -c pytorch"
     export PYTORCH_VERSION="$(conda search --json 'pytorch[channel=pytorch-nightly]' | \
                                 python -c "import os, sys, json, re; cuver = '$cuver'; \
                                 cuver = cuver.replace('cu', 'cuda') if cuver != 'cpu' else cuver; \
@@ -164,9 +164,9 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
     mkdir "$output_folder"
 
     if [[ "$py_ver" == 3.5 ]]; then
-	export CONDA_TYPING_CONSTRAINT="- typing"
+      export CONDA_TYPING_CONSTRAINT="- typing"
     else
-	export CONDA_TYPING_CONSTRAINT=""
+      export CONDA_TYPING_CONSTRAINT=""
     fi
 
     export VSTOOLCHAIN_PACKAGE=vs2017
