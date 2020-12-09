@@ -8,6 +8,7 @@ dependencies:
   - codecov
   - pip
   - ca-certificates
+  - pycrypto
   - pip:
       - future
       - scipy
