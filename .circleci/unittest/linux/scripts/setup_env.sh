@@ -14,6 +14,11 @@ env_dir="${root_dir}/env"
 
 cd "${root_dir}"
 
+case "$(uname -s)" in
+    Darwin*) os=MacOSX;;
+    *) os=Linux
+esac
+
 # 1. Install conda at ./conda
 if [ ! -d "${conda_dir}" ]; then
     printf "* Installing conda\n"
