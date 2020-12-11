@@ -1540,7 +1540,7 @@ workflows:
           name: nightly_binary_macos_wheel_py3.9_cpu_upload
           requires:
             - nightly_binary_macos_wheel_py3.9_cpu
-          subfolder: ''v
+          subfolder: ''
       - binary_win_wheel:
           cu_version: cpu
           filters:
