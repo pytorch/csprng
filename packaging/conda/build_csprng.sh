@@ -127,7 +127,7 @@ else
 fi
 
 if [[ -z "$PYTORCH_VERSION" ]]; then
-    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly -c pytorch -c conda-forge"
+    export CONDA_CHANNEL_FLAGS="-c pytorch-nightly -c pytorch"
     export PYTORCH_VERSION="$(conda search --json 'pytorch[channel=pytorch-nightly]' | \
                                 python -c "import os, sys, json, re; cuver = '$cuver'; \
                                 cuver = cuver.replace('cu', 'cuda') if cuver != 'cpu' else cuver; \
@@ -141,7 +141,7 @@ if [[ -z "$PYTORCH_VERSION" ]]; then
         exit 1
     fi
 else
-    export CONDA_CHANNEL_FLAGS="-c pytorch -c pytorch-nightly -c conda-forge"
+    export CONDA_CHANNEL_FLAGS="-c pytorch -c pytorch-nightly"
 fi
 if [[ "$desired_cuda" == 'cpu' ]]; then
     export CONDA_PYTORCH_BUILD_CONSTRAINT="- pytorch==$PYTORCH_VERSION"
