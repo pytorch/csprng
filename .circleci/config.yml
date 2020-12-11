@@ -408,7 +408,11 @@ jobs:
       - designate_upload_channel
       - run:
           name: Install wget
-          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget libomp
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget
+          # Disable brew auto update which is very slow
+      - run:
+          name: Install libomp
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install libomp
           # Disable brew auto update which is very slow
       - run:
           name: Generate cache key
