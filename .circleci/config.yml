@@ -161,6 +161,10 @@ jobs:
     steps:
       - checkout_merge
       - run:
+          name: Install libomp
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install libomp
+          # Disable brew auto update which is very slow
+      - run:
           # Cannot easily deduplicate this as source'ing activate
           # will set environment variables which we need to propagate
           # to build_wheel.sh
