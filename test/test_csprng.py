@@ -377,11 +377,12 @@ class TestCSPRNG(unittest.TestCase):
                 for initial_size in [0, 4, 8, 15, 16, 23, 42]:
                     initial = torch.empty(initial_size, dtype=initial_dtype).random_()
                     initial_np = initial.numpy().view(np.int8)
+                    initial_size_bytes = initial_size * sizeof(initial_dtype)
                     for encrypted_dtype in self.all_dtypes:
-                        encrypted_size = (initial_size * sizeof(initial_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
+                        encrypted_size = (initial_size_bytes + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
                         encrypted = torch.zeros(encrypted_size, dtype=encrypted_dtype)
                         for decrypted_dtype in self.all_dtypes:
-                            decrypted_size = (encrypted_size * sizeof(encrypted_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(decrypted_dtype)
+                            decrypted_size = (initial_size_bytes + sizeof(decrypted_dtype) - 1) // sizeof(decrypted_dtype)
                             decrypted = torch.zeros(decrypted_size, dtype=decrypted_dtype)
                             for mode in ["ecb", "ctr"]:
                                 for device in self.all_devices:
@@ -399,16 +400,13 @@ class TestCSPRNG(unittest.TestCase):
                                     self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
-                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)[:initial_size_bytes]
 
                                     aes = create_aes(mode, key_np)
 
-                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), block_size_bytes)), dtype=np.int8)
+                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), block_size_bytes)), dtype=np.int8)[:initial_size_bytes]
                                     self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
 
-                                    padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
-                                    if padding_size_bytes != 0:
-                                        decrypted_np = decrypted_np[:padding_size_bytes]
                                     self.assertTrue(np.array_equal(initial_np, decrypted_np))
 
 if __name__ == '__main__':
