@@ -4,8 +4,8 @@ channels:
 dependencies:
   - numpy
   - pytest
-  - pytest-cov
-  - codecov
+#  - pytest-cov
+#  - codecov
   - pip
   - ca-certificates
   - pycrypto
