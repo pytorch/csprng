@@ -183,10 +183,9 @@ jobs:
     steps:
       - checkout_merge
       - run:
-          name: Install cowsay
-          command: |
-            brew update
-            brew install libomp
+          name: Install libomp
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install libomp
+          # Disable brew auto update which is very slow
       - run:
           command: |
             curl -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
@@ -409,7 +408,7 @@ jobs:
       - designate_upload_channel
       - run:
           name: Install wget
-          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget libomp
           # Disable brew auto update which is very slow
       - run:
           name: Generate cache key
