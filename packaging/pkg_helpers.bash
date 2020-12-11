@@ -140,8 +140,6 @@ setup_build_version() {
 setup_macos() {
   if [[ "$(uname)" == Darwin ]]; then
     export MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++
-    brew_exec="$(which brew)"
-    ${brew_exec} install libomp
   fi
 }
 
