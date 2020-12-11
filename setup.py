@@ -84,10 +84,10 @@ def get_extensions():
     else:
         cxx_flags = cxx_flags.split(' ')
     if openmp:
-        if sys.platform == 'linux':
-            cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
-        elif sys.platform == 'win32':
+        if sys.platform == 'win32':
             cxx_flags = append_flags(cxx_flags, ['/openmp'])
+        else:
+            cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
 
     if build_cuda:
         extension = CUDAExtension
