@@ -420,7 +420,8 @@ Tensor decrypt(Tensor input, Tensor output, Tensor key, const std::string& ciphe
   TORCH_CHECK(input.device() == output.device() && input.device() == key.device(), "input, output and key tensors must have the same device");
   const auto output_size_bytes = output.numel() * output.itemsize();
   const auto input_size_bytes = input.numel() * input.itemsize();
-  TORCH_CHECK(output_size_bytes == input_size_bytes, "input and output tensors must have the same size in byte");
+  const auto diff = input_size_bytes - output_size_bytes;
+  TORCH_CHECK(0 <= diff && diff < aes::block_t_size, "output tensor size in bytes must be less then or equal to input tensor size in bytes, the difference must be less than block size");
   TORCH_CHECK(input_size_bytes % aes::block_t_size == 0, "input tensor size in bytes must divisible by cipher block size in bytes");
   check_cipher(cipher, key);
   const auto key_bytes = reinterpret_cast<uint8_t*>(key.contiguous().data_ptr());
