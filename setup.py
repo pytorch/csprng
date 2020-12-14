@@ -64,6 +64,8 @@ def get_extensions():
     build_cuda = torch.cuda.is_available() or os.getenv('FORCE_CUDA',
                                                         '0') == '1'
 
+    use_openssl = os.getenv('USE_OPENSSL', '0') == '1'
+
     module_name = 'torchcsprng'
 
     extensions_dir = os.path.join(cwd, module_name, 'csrc')
@@ -111,12 +113,18 @@ def get_extensions():
             'cxx': cxx_flags,
         }
 
+    libraries = []
+    if use_openssl:
+        define_macros += [('USE_OPENSSL', None)]
+        libraries.append('crypto')
+
     ext_modules = [
         extension(
             module_name + '._C',
             sources,
             define_macros=define_macros,
             extra_compile_args=extra_compile_args,
+            libraries=libraries,
         )
     ]
 
