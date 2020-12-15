@@ -434,7 +434,7 @@ class TestCSPRNG(unittest.TestCase):
             key = torch.empty(key_size, dtype=key_dtype).random_()
             key_np = key.numpy().view(np.int8)
             for initial_dtype in self.all_dtypes:
-                for initial_size_bytes in [0, 16, 256, 1048576]:
+                for initial_size_bytes in [0, 16, 256]:
                     initial_size = initial_size_bytes // sizeof(initial_dtype)
                     initial = torch.empty(initial_size, dtype=initial_dtype).random_()
                     initial_np = initial.numpy().view(np.int8)
