@@ -93,7 +93,7 @@ Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> 
   }
 }
 
-Tensor& normal_Tensor_float_out(Tensor& output, const Tensor& mean, double std, c10::optional<Generator> gen) {
+Tensor& normal_Tensor_float_out(const Tensor& mean, double std, c10::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_float_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -105,7 +105,7 @@ Tensor& normal_Tensor_float_out(Tensor& output, const Tensor& mean, double std, 
   }
 }
 
-Tensor& normal_float_Tensor_out(Tensor& output, double mean, const Tensor& std, c10::optional<Generator> gen) {
+Tensor& normal_float_Tensor_out(double mean, const Tensor& std, c10::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_float_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -117,7 +117,7 @@ Tensor& normal_float_Tensor_out(Tensor& output, double mean, const Tensor& std, 
   }
 }
 
-Tensor& normal_Tensor_Tensor_out(Tensor& output, const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
+Tensor& normal_Tensor_Tensor_out(const Tensor& mean, const Tensor& std, c10::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -272,12 +272,12 @@ namespace {
   }
 } // namespace
 
-Tensor& randperm_generator_out(Tensor& result, int64_t n, c10::optional<Generator> generator) {
+Tensor& randperm_generator_out(int64_t n, c10::optional<Generator> generator, Tensor& result) {
   TORCH_CHECK(n >= 0, "n must be non-negative, got", n);
   check_supported_max_int_with_precision(n, result);
   if (result.device().type() == at::kCUDA) {
     auto result_cpu = at::empty({n}, result.options().device(kCPU));
-    randperm_generator_out(result_cpu, n, generator);
+    randperm_generator_out(n, generator, result_cpu);
     result.resize_({n});
     return result.copy_(result_cpu);
   }
@@ -344,29 +344,29 @@ bool supports_cuda() {
 
 TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
   // Random
-  m.impl_UNBOXED("random_.from",             random_from_to);
-  m.impl_UNBOXED("random_.to",               random_to);
-  m.impl_UNBOXED("random_",                  random_);
+  m.impl("random_.from",             random_from_to);
+  m.impl("random_.to",               random_to);
+  m.impl("random_",                  random_);
   // Uniform
-  m.impl_UNBOXED("uniform_",                 uniform_);
+  m.impl("uniform_",                 uniform_);
   // Normal
-  m.impl_UNBOXED("normal_",                  normal_);
-  m.impl_UNBOXED("normal.Tensor_float_out",  normal_Tensor_float_out);
-  m.impl_UNBOXED("normal.float_Tensor_out",  normal_float_Tensor_out);
-  m.impl_UNBOXED("normal.Tensor_Tensor_out", normal_Tensor_Tensor_out);
-  m.impl_UNBOXED("normal.Tensor_float",      normal_Tensor_float);
-  m.impl_UNBOXED("normal.float_Tensor",      normal_float_Tensor);
-  m.impl_UNBOXED("normal.Tensor_Tensor",     normal_Tensor_Tensor);
+  m.impl("normal_",                  normal_);
+  m.impl("normal.Tensor_float_out",  normal_Tensor_float_out);
+  m.impl("normal.float_Tensor_out",  normal_float_Tensor_out);
+  m.impl("normal.Tensor_Tensor_out", normal_Tensor_Tensor_out);
+  m.impl("normal.Tensor_float",      normal_Tensor_float);
+  m.impl("normal.float_Tensor",      normal_float_Tensor);
+  m.impl("normal.Tensor_Tensor",     normal_Tensor_Tensor);
   // Cauchy
-  m.impl_UNBOXED("cauchy_",                  cauchy_);
+  m.impl("cauchy_",                  cauchy_);
   // LogNormal
-  m.impl_UNBOXED("log_normal_",              log_normal_);
+  m.impl("log_normal_",              log_normal_);
   // Geometric
-  m.impl_UNBOXED("geometric_",               geometric_);
+  m.impl("geometric_",               geometric_);
   // Exponential
-  m.impl_UNBOXED("exponential_",             exponential_);
+  m.impl("exponential_",             exponential_);
   // Random permutation
-  m.impl_UNBOXED("randperm.generator_out",   randperm_generator_out);
+  m.impl("randperm.generator_out",   randperm_generator_out);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
