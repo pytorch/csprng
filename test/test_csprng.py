@@ -377,11 +377,12 @@ class TestCSPRNG(unittest.TestCase):
                 for initial_size in [0, 4, 8, 15, 16, 23, 42]:
                     initial = torch.empty(initial_size, dtype=initial_dtype).random_()
                     initial_np = initial.numpy().view(np.int8)
+                    initial_size_bytes = initial_size * sizeof(initial_dtype)
                     for encrypted_dtype in self.all_dtypes:
-                        encrypted_size = (initial_size * sizeof(initial_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
+                        encrypted_size = (initial_size_bytes + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
                         encrypted = torch.zeros(encrypted_size, dtype=encrypted_dtype)
                         for decrypted_dtype in self.all_dtypes:
-                            decrypted_size = (encrypted_size * sizeof(encrypted_dtype) + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(decrypted_dtype)
+                            decrypted_size = (initial_size_bytes + sizeof(decrypted_dtype) - 1) // sizeof(decrypted_dtype)
                             decrypted = torch.zeros(decrypted_size, dtype=decrypted_dtype)
                             for mode in ["ecb", "ctr"]:
                                 for device in self.all_devices:
@@ -399,17 +400,65 @@ class TestCSPRNG(unittest.TestCase):
                                     self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
-                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)
+                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)[:initial_size_bytes]
 
                                     aes = create_aes(mode, key_np)
 
-                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), block_size_bytes)), dtype=np.int8)
+                                    decrypted_expected = np.frombuffer(aes.decrypt(pad(encrypted_np.tobytes(), block_size_bytes)), dtype=np.int8)[:initial_size_bytes]
                                     self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
 
-                                    padding_size_bytes = initial_size * sizeof(initial_dtype) - decrypted_size * sizeof(decrypted_dtype)
-                                    if padding_size_bytes != 0:
-                                        decrypted_np = decrypted_np[:padding_size_bytes]
                                     self.assertTrue(np.array_equal(initial_np, decrypted_np))
+
+    def test_encrypt_decrypt_inplace(self):
+        key_size_bytes = 16
+
+        def sizeof(dtype):
+            if dtype == torch.bool:
+                return 1
+            elif dtype.is_floating_point:
+                return torch.finfo(dtype).bits // 8
+            else:
+                return torch.iinfo(dtype).bits // 8
+
+        def create_aes(m, k):
+            if m == "ecb":
+                return AES.new(k.tobytes(), AES.MODE_ECB)
+            elif m == "ctr":
+                ctr = Counter.new(AES.block_size * 8, initial_value=0, little_endian=True)
+                return AES.new(k.tobytes(), AES.MODE_CTR, counter=ctr)
+            else:
+                return None
+
+        for key_dtype in self.all_dtypes:
+            key_size = key_size_bytes // sizeof(key_dtype)
+            key = torch.empty(key_size, dtype=key_dtype).random_()
+            key_np = key.numpy().view(np.int8)
+            for initial_dtype in self.all_dtypes:
+                for initial_size_bytes in [0, 16, 256]:
+                    initial_size = initial_size_bytes // sizeof(initial_dtype)
+                    initial = torch.empty(initial_size, dtype=initial_dtype).random_()
+                    initial_np = initial.numpy().view(np.int8)
+                    initial_np_copy = np.copy(initial_np)
+                    for mode in ["ecb", "ctr"]:
+                        for device in self.all_devices:
+                            key = key.to(device)
+                            initial = initial.to(device)
+
+                            csprng.encrypt(initial, initial, key, "aes128", mode)
+                            encrypted_np = initial.cpu().numpy().view(np.int8)
+                            aes = create_aes(mode, key_np)
+                            encrypted_expected = np.frombuffer(aes.encrypt(initial_np_copy.tobytes()), dtype=np.int8)
+                            self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
+
+                            encrypted_np_copy = np.copy(encrypted_np)
+
+                            csprng.decrypt(initial, initial, key, "aes128", mode)
+                            decrypted_np = initial.cpu().numpy().view(np.int8)
+                            aes = create_aes(mode, key_np)
+                            decrypted_expected = np.frombuffer(aes.decrypt(encrypted_np_copy.tobytes()), dtype=np.int8)
+                            self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
+
+                            self.assertTrue(np.array_equal(initial_np_copy, decrypted_np))
 
 if __name__ == '__main__':
     unittest.main()
