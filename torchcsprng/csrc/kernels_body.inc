@@ -66,8 +66,8 @@ void aes_helper(at::TensorIterator& iter, const uint8_t* key_bytes, transform_t 
       return output_offset_calc.get(li)[0];
   };
   torch::csprng::block_cipher<aes::block_t_size>(
-      nullptr, 0, 0, output_index_calc,
-      output.data_ptr(), output.numel(), output.element_size(), output_index_calc,
+      nullptr, 0, 0, output_index_calc, false,
+      output.data_ptr(), output.numel(), output.element_size(), output_index_calc, output.is_contiguous(),
       iter.device_type(),
       [key_bytes] TORCH_CSPRNG_HOST_DEVICE (int64_t idx, uint8_t* block) -> void {
           uint8_t idx_block[aes::block_t_size];
