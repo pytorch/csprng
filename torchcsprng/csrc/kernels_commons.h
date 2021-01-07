@@ -37,6 +37,9 @@ struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
 
   static at::DeviceType device_type() { return at::DeviceType::CPU; }
 
+  void set_state(const c10::TensorImpl& new_state) override { throw std::runtime_error("not implemented"); }
+  c10::intrusive_ptr<c10::TensorImpl> get_state() const override { throw std::runtime_error("not implemented"); }
+
   bool use_rd_;
   std::random_device rd_;
   std::mt19937 mt_;
