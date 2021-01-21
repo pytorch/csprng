@@ -58,6 +58,9 @@ jobs:
         PY3.8:
           DESIRED_PYTHON: 3.8
           CUDA_VERSION: cpu
+        PY3.9:
+          DESIRED_PYTHON: 3.9
+          CUDA_VERSION: cpu
       ${{ if ne(parameters.spec, 'CPU') }}:
         PY3.5_92:
           DESIRED_PYTHON: 3.5
@@ -71,6 +74,9 @@ jobs:
         PY3.8_92:
           DESIRED_PYTHON: 3.8
           CUDA_VERSION: 92
+        PY3.9_92:
+          DESIRED_PYTHON: 3.9
+          CUDA_VERSION: 92
         PY3.5_101:
           DESIRED_PYTHON: 3.5
           CUDA_VERSION: 101
@@ -83,6 +89,9 @@ jobs:
         PY3.8_101:
           DESIRED_PYTHON: 3.8
           CUDA_VERSION: 101
+        PY3.9_101:
+          DESIRED_PYTHON: 3.9
+          CUDA_VERSION: 101
         PY3.5_102:
           DESIRED_PYTHON: 3.5
           CUDA_VERSION: 102
@@ -94,6 +103,9 @@ jobs:
           CUDA_VERSION: 102
         PY3.8_102:
           DESIRED_PYTHON: 3.8
+          CUDA_VERSION: 102
+        PY3.9_102:
+          DESIRED_PYTHON: 3.9
           CUDA_VERSION: 102
 
   pool:
