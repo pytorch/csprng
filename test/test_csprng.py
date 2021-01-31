@@ -297,6 +297,7 @@ class TestCSPRNG(unittest.TestCase):
                                     if not x1 <= x < x2 and not y1 <= y < y2 and not z1 <= z < z2:
                                         self.assertTrue(t[x, y, z] == 0)
 
+    @unittest.skipIf(IS_SANDCASTLE or IS_FBCODE, "Does not work on Sandcastle")
     @unittest.skipIf(torch.get_num_threads() < 2, "requires multithreading CPU")
     def test_cpu_parallel(self):
         urandom_gen = csprng.create_random_device_generator('/dev/urandom')
