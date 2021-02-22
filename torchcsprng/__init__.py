@@ -7,3 +7,9 @@
 import torch
 
 from torchcsprng._C import *
+
+
+try:
+    from .version import __version__, git_version  # noqa: F401
+except ImportError:
+    pass
