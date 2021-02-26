@@ -35,11 +35,7 @@ commands:
       - run:
           name: adding UPLOAD_CHANNEL to BASH_ENV
           command: |
-            our_upload_channel=nightly
-            # On tags upload to test instead
-            if [[ -n "${CIRCLE_TAG}" ]]; then
-              our_upload_channel=test
-            fi
+            our_upload_channel="test"
             echo "export UPLOAD_CHANNEL=${our_upload_channel}" >> ${BASH_ENV}
 
 binary_common: &binary_common
@@ -48,11 +44,11 @@ binary_common: &binary_common
     build_version:
       description: "version number of release binary; by default, build a nightly"
       type: string
-      default: ""
+      default: "0.2.0"
     pytorch_version:
       description: "PyTorch version to build against; by default, use a nightly"
       type: string
-      default: ""
+      default: "1.8.0"
     # Don't edit these
     python_version:
       description: "Python version to build against (e.g., 3.7)"
@@ -83,6 +79,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
+      - designate_upload_channel
       - run: packaging/build_wheel.sh
       - store_artifacts:
           path: dist
@@ -98,6 +95,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
+      - designate_upload_channel
       - run:
           no_output_timeout: 20m
           command: packaging/build_conda.sh
@@ -115,6 +113,7 @@ jobs:
     executor: windows-cpu
     steps:
       - checkout_merge
+      - designate_upload_channel
       - run:
           name: Build conda packages
           no_output_timeout: 20m
@@ -141,6 +140,7 @@ jobs:
     executor: windows-cpu
     steps:
       - checkout_merge
+      - designate_upload_channel
       - run:
           name: Build wheel packages
           command: |
@@ -163,6 +163,7 @@ jobs:
       xcode: "9.4.1"
     steps:
       - checkout_merge
+      - designate_upload_channel
 #      - run:
 #          name: Install libomp
 #          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install libomp
@@ -189,6 +190,7 @@ jobs:
       xcode: "9.4.1"
     steps:
       - checkout_merge
+      - designate_upload_channel
 #      - run:
 #          name: Install libomp
 #          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install libomp
