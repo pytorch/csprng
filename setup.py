@@ -6,7 +6,7 @@ import distutils.command.clean
 import glob
 import shutil
 
-import torch
+# import torch
 from torch.utils.cpp_extension import BuildExtension, CppExtension, \
     CUDAExtension, CUDA_HOME
 
@@ -61,14 +61,13 @@ def append_flags(flags, flags_to_append):
 
 
 def get_extensions():
-    build_cuda = torch.cuda.is_available() or os.getenv('FORCE_CUDA',
-                                                        '0') == '1'
+    build_cuda = False #  torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1'
 
     module_name = 'torchcsprng'
 
     extensions_dir = os.path.join(cwd, module_name, 'csrc')
 
-    openmp = 'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
+    openmp = False #  'ATen parallel backend: OpenMP' in torch.__config__.parallel_info()
 
     main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
     source_cpu = glob.glob(os.path.join(extensions_dir, 'cpu', '*.cpp'))

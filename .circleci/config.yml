@@ -775,11 +775,11 @@ workflows:
           name: binary_macos_conda_py3.8_cpu
           python_version: '3.8'
           wheel_docker_image: pytorch/manylinux-cuda102
-#      - binary_macos_conda:
-#          cu_version: cpu
-#          name: binary_macos_conda_py3.9_cpu
-#          python_version: '3.9'
-#          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_macos_conda:
+          cu_version: cpu
+          name: binary_macos_conda_py3.9_cpu
+          python_version: '3.9'
+          wheel_docker_image: pytorch/manylinux-cuda102
       - binary_win_conda:
           cu_version: cpu
           filters:
@@ -1002,10 +1002,10 @@ workflows:
           cu_version: cpu
           name: unittest_macos_cpu_py3.8
           python_version: '3.8'
-#      - unittest_macos_cpu:
-#          cu_version: cpu
-#          name: unittest_macos_cpu_py3.9
-#          python_version: '3.9'
+      - unittest_macos_cpu:
+          cu_version: cpu
+          name: unittest_macos_cpu_py3.9
+          python_version: '3.9'
   nightly:
     jobs:
 #      - circleci_consistency
@@ -2132,26 +2132,26 @@ workflows:
           name: nightly_binary_macos_conda_py3.8_cpu_upload
           requires:
             - nightly_binary_macos_conda_py3.8_cpu
-#      - binary_macos_conda:
-#          cu_version: cpu
-#          filters:
-#            branches:
-#              only: nightly
-#            tags:
-#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-#          name: nightly_binary_macos_conda_py3.9_cpu
-#          python_version: '3.9'
-#          wheel_docker_image: pytorch/manylinux-cuda102
-#      - binary_conda_upload:
-#          context: org-member
-#          filters:
-#            branches:
-#              only: nightly
-#            tags:
-#              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
-#          name: nightly_binary_macos_conda_py3.9_cpu_upload
-#          requires:
-#            - nightly_binary_macos_conda_py3.9_cpu
+      - binary_macos_conda:
+          cu_version: cpu
+          filters:
+            branches:
+              only: nightly
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+          name: nightly_binary_macos_conda_py3.9_cpu
+          python_version: '3.9'
+          wheel_docker_image: pytorch/manylinux-cuda102
+      - binary_conda_upload:
+          context: org-member
+          filters:
+            branches:
+              only: nightly
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*-rc[0-9]+/
+          name: nightly_binary_macos_conda_py3.9_cpu_upload
+          requires:
+            - nightly_binary_macos_conda_py3.9_cpu
       - binary_win_conda:
           cu_version: cpu
           filters:
