@@ -88,8 +88,8 @@ def get_extensions():
             cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
         elif sys.platform == 'win32':
             cxx_flags = append_flags(cxx_flags, ['/openmp'])
-        # elif sys.platform == 'darwin':
-        #     cxx_flags = append_flags(cxx_flags, ['-Xpreprocessor', '-fopenmp'])
+        elif sys.platform == 'darwin':
+            cxx_flags = append_flags(cxx_flags, ['-Xpreprocessor', '-fiopenmp'])
 
     if build_cuda:
         extension = CUDAExtension
