@@ -55,12 +55,14 @@ CSPRNG works with Python 3.6-3.9 on the following operating systems and can be u
 | CPU                | Supported | Supported     | Supported      |
 | CUDA               | Supported | Not Supported | Supported since 0.2.0 |
 
-| PyTorch | torchcsprng | Python   | CUDA             |
-|---------|-------------|----------|------------------|
-| 1.8.0   | 0.2.0       | 3.7-3.9  | 10.1, 10.2, 11.1 |
-| 1.7.1   | 0.1.4       | 3.6-3.8  | 9.2, 10.1, 10.2  |
-| 1.7.0   | 0.1.3       | 3.6-3.8  | 9.2, 10.1, 10.2  |
-| 1.6.0   | 0.1.2       | 3.6-3.8  | 9.2, 10.1, 10.2  |
+The following is the corresponding CSPRNG versions and supported Python versions.
+
+| PyTorch | CSPRNG | Python   | CUDA             |
+|---------|--------|----------|------------------|
+| 1.8.0   | 0.2.0  | 3.7-3.9  | 10.1, 10.2, 11.1 |
+| 1.7.1   | 0.1.4  | 3.6-3.8  | 9.2, 10.1, 10.2  |
+| 1.7.0   | 0.1.3  | 3.6-3.8  | 9.2, 10.1, 10.2  |
+| 1.6.0   | 0.1.2  | 3.6-3.8  | 9.2, 10.1, 10.2  |
 
 
 ### Binary Installation
@@ -69,17 +71,17 @@ Anaconda:
 
 | OS      | CUDA                                                        |                                              |
 |---------|-------------------------------------------------------------|----------------------------------------------|
-| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | conda install torchcsprng cudatoolkit=9.2 -c pytorch<br/><br/>conda install torchcsprng cudatoolkit=10.1 -c pytorch<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch<br/><br/>conda install torchcsprng cpuonly -c pytorch |
+| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | conda install torchcsprng cudatoolkit=9.2 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.1 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cpuonly -c pytorch -c conda-forge |
 | macOS   | None                                                        | conda install torchcsprng cpuonly -c pytorch |
-| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None              | conda install torchcsprng cudatoolkit=10.1 -c pytorch<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch<br/><br/>conda install torchcsprng cpuonly -c pytorch |
+| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None              | conda install torchcsprng cudatoolkit=10.1 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch -c conda-forge<br/><br/>conda install torchcsprng cpuonly -c pytorch -c conda-forge |
 
 pip:
 
 | OS      | CUDA                                                        |                               |
 |---------|-------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | pip install torchcsprng==0.1.4+cu92 torch==1.7.1+cu92 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.2.0+cpu torch==1.8.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
+| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | pip install torchcsprng==0.1.4+cu92 torch==1.7.1+cu92 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu102 torch==1.8.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.2.0+cpu torch==1.8.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
 | macOS   | None                                                        | pip install torchcsprng torch |
-| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None              | pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.2.0+cpu torch==1.8.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
+| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None              | pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu102 torch==1.8.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html <br/><br/>pip install torchcsprng torch<br/><br/>pip install torchcsprng==0.2.0+cpu torch==1.8.0+cpu -f https://download.pytorch.org/whl/torch_stable.html |
 
 ### Nightly builds:
 
@@ -87,9 +89,9 @@ Anaconda:
 
 | OS      | CUDA                                                         |                                                      |
 |---------|--------------------------------------------------------------|------------------------------------------------------|
-| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None  | conda install torchcsprng cudatoolkit=9.2 -c pytorch-nightly<br/><br/>conda install torchcsprng cudatoolkit=10.1 -c pytorch-nightly<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch-nightly<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch-nightly<br/><br/>conda install torchcsprng cpuonly -c pytorch-nightly |
-| macOS   | None                                                         | conda install torchcsprng cpuonly -c pytorch-nightly |
-| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None               | conda install torchcsprng cudatoolkit=10.1 -c pytorch-nightly<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch-nightly<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch-nightly<br/><br/>conda install torchcsprng cpuonly -c pytorch-nightly |
+| Linux   | 9.2<br/><br/>10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None  | conda install torchcsprng cudatoolkit=9.2 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.1 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cpuonly -c pytorch-nightly -c conda-forge |
+| macOS   | None                                                         | conda install torchcsprng -c pytorch-nightly |
+| Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None               | conda install torchcsprng cudatoolkit=10.1 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=10.2 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cudatoolkit=11.1 -c pytorch-nightly -c conda-forge<br/><br/>conda install torchcsprng cpuonly -c pytorch-nightly -c conda-forge |
 
 pip:
 
