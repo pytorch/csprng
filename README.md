@@ -1,11 +1,11 @@
 # PyTorch/CSPRNG
 
-torchcsprng is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/cpp_extension.html) that provides
-
-- [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) 128-bit encryption/decryption in two modes: [ECB](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)) and [CTR](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
-- [cryptographically secure pseudorandom number generators](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) for PyTorch.
-
 [![CircleCI](https://circleci.com/gh/pytorch/csprng.svg?style=shield&circle-token=64701692dd7f13f31019612289f0200fdb661dc2)](https://circleci.com/gh/pytorch/csprng)
+
+torchcsprng is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/cpp_extension.html) that provides:
+
+- [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) 128-bit encryption/decryption in two modes: [ECB](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)) and [CTR](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb)
+- [cryptographically secure pseudorandom number generators](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) for PyTorch. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb)
 
 ## Design
 
@@ -24,6 +24,24 @@ Advantages:
 - CPU random number generation is also parallel(unlike the default PyTorch CPU generator)
 
 ## Features
+
+torchcsprng 0.2.0 exposes new API for tensor encryption/decryption. Tensor encryption/decryption API is dtype agnostic, so a tensor of any dtype can be encrypted and the result can be stored to a tensor of any dtype. An encryption key also can be a tensor of any dtype. Currently torchcsprng supports [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) cipher with 128-bit key in two modes: [ECB](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)) and [CTR](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)).
+
+* `torchcsprng.encrypt(input: Tensor, output: Tensor, key: Tensor, cipher: string, mode: string)`
+
+> - `input` tensor can be any CPU or CUDA tensor of any dtype and size in bytes(zero-padding is used to make its size in bytes divisible by block size in bytes)
+> - `output` tensor can have any dtype and the same device as `input` tensor and the size in bytes rounded up to the block size in bytes(16 bytes for AES 128)
+> - `key` tensor can have any dtype and the same device as `input` tensor and size in bytes equal to 16 for AES 128
+> - `cipher` currently can be only one supported value `"aes128"`
+> - `mode` currently can be either [`"ecb"`](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)) or [`"ctr"`](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
+
+* `torchcsprng.decrypt(input: Tensor, output: Tensor, key: Tensor, cipher: string, mode: string)`
+
+> - `input` tensor can be any CPU or CUDA tensor of any dtype with size in bytes divisible by the block size in bytes(16 bytes for AES 128)
+> - `output` tensor can have any dtype but the same device as `input` tensor and the same size in bytes as `input` tensor
+> - `key` tensor can have any dtype and the same device as `input` tensor and size in bytes equal to 16 for AES 128
+> - `cipher` currently can be only one supported value `"aes128"`
+> - `mode` currently can be either [`"ecb"`](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)) or [`"ctr"`](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR))
 
 torchcsprng exposes two methods to create crypto-secure and non-crypto-secure PRNGs:
 
