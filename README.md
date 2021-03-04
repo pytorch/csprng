@@ -205,3 +205,7 @@ We appreciate all contributions. If you are planning to contribute back bug-fixe
 ## License
 
 torchcsprng is BSD 3-clause licensed. See the license file [here](https://github.com/pytorch/csprng/blob/master/LICENSE)
+
+## [Terms of Use](https://opensource.facebook.com/legal/terms)
+
+## [Privacy Policy](https://opensource.facebook.com/legal/privacy)
