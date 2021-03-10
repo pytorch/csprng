@@ -44,9 +44,13 @@ class TestCSPRNG(unittest.TestCase):
 
     int_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64]
 
-    fp_ftypes = [torch.float, torch.double, torch.half, torch.bfloat16]
+    standard_fp_dtypes = [torch.float, torch.double]
 
-    num_dtypes = int_dtypes + fp_ftypes
+    non_standard_fp_dtypes = [torch.half, torch.bfloat16]
+
+    fp_dtypes = standard_fp_dtypes + non_standard_fp_dtypes
+
+    num_dtypes = int_dtypes + fp_dtypes
 
     all_dtypes = num_dtypes + [torch.bool]
 
@@ -73,7 +77,11 @@ class TestCSPRNG(unittest.TestCase):
                     res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(0, to_inc))
                     self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    no_cuda = not torch.cuda.is_available() or not csprng.supports_cuda()
+
+    no_cuda_message = "CUDA is not available or csprng was not compiled with CUDA support"
+
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_random_cpu_vs_cuda(self):
         for dtype in self.num_dtypes:
             gen = csprng.create_mt19937_generator(42)
@@ -91,7 +99,7 @@ class TestCSPRNG(unittest.TestCase):
                     res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(0, to_))
                     self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda or dtype, no_cuda_message)
     def test_random_to_cpu_vs_cuda(self):
         to_ = 42
         for dtype in self.num_dtypes:
@@ -112,7 +120,7 @@ class TestCSPRNG(unittest.TestCase):
                                 res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(from_, to_))
                                 self.assertTrue(res.statistic < 0.2)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_random_from_to_cpu_vs_cuda(self):
         for dtype in self.num_dtypes:
             for from_ in [0, 24, 42]:
@@ -141,7 +149,7 @@ class TestCSPRNG(unittest.TestCase):
                 self.assertEqual(t.max(), True)
                 self.assertTrue(0.4 < (t.eq(True)).to(torch.int).sum().item() / self.size < 0.6)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_random_bool_cpu_vs_cuda(self):
         gen = csprng.create_mt19937_generator(42)
         cpu_t = torch.empty(self.size, dtype=torch.bool, device='cpu').random_(generator=gen)
@@ -152,7 +160,7 @@ class TestCSPRNG(unittest.TestCase):
     def test_uniform_kstest(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for from_ in [-42, 0, 4.2]:
                         for to_ in [-4.2, 0, 42]:
                             if to_ > from_:
@@ -160,9 +168,9 @@ class TestCSPRNG(unittest.TestCase):
                                 res = stats.kstest(to_numpy(t.cpu(), torch.double), 'uniform', args=(from_, (to_ - from_)))
                                 self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_uniform_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_dtypes:
             for from_ in [-42, 0, 4.2]:
                 for to_ in [-4.2, 0, 42]:
                     if to_ > from_:
@@ -170,33 +178,37 @@ class TestCSPRNG(unittest.TestCase):
                         cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').uniform_(from_, to_, generator=gen)
                         gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').uniform_(from_, to_, generator=gen)
+                        if dtype in self.non_standard_fp_dtypes:
+                            print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
                         self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_normal_kstest(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for mean in [-3, 0, 7]:
                         for std in [1, 5, 7]:
                             t = torch.empty(self.size, dtype=dtype, device=device).normal_(mean=mean, std=std, generator=gen)
                             res = stats.kstest(to_numpy(t.cpu(), torch.double), 'norm', args=(mean, std))
                             self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_normal_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_dtypes:
             for mean in [-3, 0, 7]:
                 for std in [1, 5, 7]:
                     gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').normal_(mean=mean, std=std, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').normal_(mean=mean, std=std, generator=gen)
+                    if dtype in self.non_standard_fp_dtypes:
+                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_log_normal_kstest(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for mean in [-3, 0, 7]:
                         for std in [1, 5, 7]:
                             t = torch.empty(self.size, dtype=dtype, device=device).log_normal_(mean=mean, std=std, generator=gen)
@@ -206,30 +218,32 @@ class TestCSPRNG(unittest.TestCase):
                             else:
                                 self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_log_normal_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_dtypes:
             for mean in [-3, 0, 7]:
                 for std in [1, 5, 7]:
                     gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').log_normal_(mean=mean, std=std, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').log_normal_(mean=mean, std=std, generator=gen)
+                    if dtype in self.non_standard_fp_dtypes:
+                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-4)
 
     def test_exponential_kstest(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for lambd in [0.5, 1.0, 5.0]:
                         t = torch.empty(self.size, dtype=dtype, device=device).exponential_(lambd=lambd, generator=gen)
                         res = stats.kstest(to_numpy(t.cpu(), torch.double), 'expon', args=(0, 1 / lambd,))
                         self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     @unittest.skip("https://github.com/pytorch/pytorch/issues/38662")
     def test_exponential_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_dtypes:
             for lambd in [0.5, 1.0, 5.0]:
                 gen = csprng.create_mt19937_generator(42)
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
@@ -240,7 +254,7 @@ class TestCSPRNG(unittest.TestCase):
     def test_cauchy_kstest(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for median in [-10, 0, 50]:
                         for sigma in [0.5, 1.0, 10.0]:
                             t = torch.empty(self.size, dtype=dtype, device=device).cauchy_(median=median, sigma=sigma, generator=gen)
@@ -250,21 +264,23 @@ class TestCSPRNG(unittest.TestCase):
                             else:
                                 self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_cauchy_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_dtypes:
             for median in [-10, 0, 50]:
                 for sigma in [0.5, 1.0, 10.0]:
                     gen = csprng.create_mt19937_generator(42)
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').cauchy_(median=median, sigma=sigma, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').cauchy_(median=median, sigma=sigma, generator=gen)
+                    if dtype in self.non_standard_fp_dtypes:
+                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_geometric(self):
         for device in self.all_devices:
             for gen in self.all_generators:
-                for dtype in self.fp_ftypes:
+                for dtype in self.fp_dtypes:
                     for p in [0.2, 0.5, 0.8]:
                         t = torch.empty(self.size, dtype=dtype, device=device).geometric_(p=p, generator=gen)
                         # actual = np.histogram(t.cpu().to(torch.double), np.arange(1, 100))[0]
@@ -272,14 +288,16 @@ class TestCSPRNG(unittest.TestCase):
                         # res = stats.chisquare(actual, expected)
                         # self.assertAlmostEqual(res.pvalue, 1.0, delta=0.5) TODO https://github.com/pytorch/csprng/issues/7
 
-    @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_geometric_cpu_vs_cuda(self):
-        for dtype in self.fp_ftypes:
+        for dtype in self.fp_ddtypes:
             for p in [0.2, 0.5, 0.8]:
                 gen = csprng.create_mt19937_generator(42)
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').geometric_(p=p, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
+                if dtype in self.non_standard_fp_dtypes:
+                    print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_non_contiguous_vs_contiguous(self):
