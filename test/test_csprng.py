@@ -23,6 +23,16 @@ except ImportError:
 IS_SANDCASTLE = os.getenv('SANDCASTLE') == '1' or os.getenv('TW_JOB_USER') == 'sandcastle'
 IS_FBCODE = os.getenv('PYTORCH_TEST_FBCODE') == '1'
 
+def to_numpy(t, dtype=torch.float):
+    if t.dtype in [torch.half, torch.bfloat16]:
+        return t.to(dtype).numpy()
+    return t.numpy()
+
+def to_bytes(t):
+    if t.dtype == torch.bfloat16:
+        t = t.view(torch.int16)
+    return t.cpu().numpy().view(np.int8)
+
 class TestCSPRNG(unittest.TestCase):
 
     all_generators = [
@@ -52,11 +62,15 @@ class TestCSPRNG(unittest.TestCase):
                         to_inc = 2**24
                     elif dtype == torch.double:
                         to_inc = 2**53
+                    elif dtype == torch.half:
+                        to_inc = 2**11
+                    elif dtype == torch.bfloat16:
+                        to_inc = 2**8
                     else:
                         to_inc = torch.iinfo(dtype).max
 
                     t = torch.empty(self.size, dtype=dtype, device=device).random_(generator=gen)
-                    res = stats.kstest(t.cpu(), stats.randint.cdf, args=(0, to_inc))
+                    res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(0, to_inc))
                     self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -74,7 +88,7 @@ class TestCSPRNG(unittest.TestCase):
             for gen in self.all_generators:
                 for dtype in self.num_dtypes:
                     t = torch.zeros(self.size, dtype=dtype, device=device).random_(to_, generator=gen)
-                    res = stats.kstest(t.cpu(), stats.randint.cdf, args=(0, to_))
+                    res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(0, to_))
                     self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -95,7 +109,7 @@ class TestCSPRNG(unittest.TestCase):
                         for to_ in [42, 99, 123]:
                             if from_ < to_:
                                 t = torch.zeros(self.size, dtype=dtype, device=device).random_(from_, to_, generator=gen)
-                                res = stats.kstest(t.cpu(), stats.randint.cdf, args=(from_, to_))
+                                res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(from_, to_))
                                 self.assertTrue(res.statistic < 0.2)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -143,7 +157,7 @@ class TestCSPRNG(unittest.TestCase):
                         for to_ in [-4.2, 0, 42]:
                             if to_ > from_:
                                 t = torch.empty(self.size, dtype=dtype, device=device).uniform_(from_, to_, generator=gen)
-                                res = stats.kstest(t.cpu().to(torch.double), 'uniform', args=(from_, (to_ - from_)))
+                                res = stats.kstest(to_numpy(t.cpu(), torch.double), 'uniform', args=(from_, (to_ - from_)))
                                 self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -165,7 +179,7 @@ class TestCSPRNG(unittest.TestCase):
                     for mean in [-3, 0, 7]:
                         for std in [1, 5, 7]:
                             t = torch.empty(self.size, dtype=dtype, device=device).normal_(mean=mean, std=std, generator=gen)
-                            res = stats.kstest(t.cpu().to(torch.double), 'norm', args=(mean, std))
+                            res = stats.kstest(to_numpy(t.cpu(), torch.double), 'norm', args=(mean, std))
                             self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -186,8 +200,11 @@ class TestCSPRNG(unittest.TestCase):
                     for mean in [-3, 0, 7]:
                         for std in [1, 5, 7]:
                             t = torch.empty(self.size, dtype=dtype, device=device).log_normal_(mean=mean, std=std, generator=gen)
-                            res = stats.kstest(t.cpu().to(torch.double), 'lognorm', args=(std, 0, math.exp(mean)))
-                            self.assertTrue(res.statistic < 0.1)
+                            res = stats.kstest(to_numpy(t.cpu(), torch.double), 'lognorm', args=(std, 0, math.exp(mean)))
+                            if dtype in [torch.half, torch.bfloat16]:
+                                self.assertTrue(res.statistic < 0.4)
+                            else:
+                                self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
     def test_log_normal_cpu_vs_cuda(self):
@@ -206,7 +223,7 @@ class TestCSPRNG(unittest.TestCase):
                 for dtype in self.fp_ftypes:
                     for lambd in [0.5, 1.0, 5.0]:
                         t = torch.empty(self.size, dtype=dtype, device=device).exponential_(lambd=lambd, generator=gen)
-                        res = stats.kstest(t.cpu().to(torch.double), 'expon', args=(0, 1 / lambd,))
+                        res = stats.kstest(to_numpy(t.cpu(), torch.double), 'expon', args=(0, 1 / lambd,))
                         self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
@@ -227,8 +244,11 @@ class TestCSPRNG(unittest.TestCase):
                     for median in [-10, 0, 50]:
                         for sigma in [0.5, 1.0, 10.0]:
                             t = torch.empty(self.size, dtype=dtype, device=device).cauchy_(median=median, sigma=sigma, generator=gen)
-                            res = stats.kstest(t.cpu().to(torch.double), 'cauchy', args=(median, sigma))
-                            self.assertTrue(res.statistic < 0.1)
+                            res = stats.kstest(to_numpy(t.cpu(), torch.double), 'cauchy', args=(median, sigma))
+                            if dtype in [torch.half, torch.bfloat16]:
+                                self.assertTrue(res.statistic < 0.4)
+                            else:
+                                self.assertTrue(res.statistic < 0.1)
 
     @unittest.skipIf(not torch.cuda.is_available() or not csprng.supports_cuda(), "CUDA is not available or csprng was not compiled with CUDA support")
     def test_cauchy_cpu_vs_cuda(self):
@@ -372,11 +392,11 @@ class TestCSPRNG(unittest.TestCase):
         for key_dtype in self.all_dtypes:
             key_size = key_size_bytes // sizeof(key_dtype)
             key = torch.empty(key_size, dtype=key_dtype).random_()
-            key_np = key.numpy().view(np.int8)
+            key_np = to_bytes(key)
             for initial_dtype in self.all_dtypes:
                 for initial_size in [0, 4, 8, 15, 16, 23, 42]:
                     initial = torch.empty(initial_size, dtype=initial_dtype).random_()
-                    initial_np = initial.numpy().view(np.int8)
+                    initial_np = to_bytes(initial)
                     initial_size_bytes = initial_size * sizeof(initial_dtype)
                     for encrypted_dtype in self.all_dtypes:
                         encrypted_size = (initial_size_bytes + block_size_bytes - 1) // block_size_bytes * block_size_bytes // sizeof(encrypted_dtype)
@@ -392,7 +412,7 @@ class TestCSPRNG(unittest.TestCase):
                                     decrypted = decrypted.to(device)
 
                                     csprng.encrypt(initial, encrypted, key, "aes128", mode)
-                                    encrypted_np = encrypted.cpu().numpy().view(np.int8)
+                                    encrypted_np = to_bytes(encrypted)
 
                                     aes = create_aes(mode, key_np)
 
@@ -400,7 +420,7 @@ class TestCSPRNG(unittest.TestCase):
                                     self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
 
                                     csprng.decrypt(encrypted, decrypted, key, "aes128", mode)
-                                    decrypted_np = decrypted.cpu().numpy().view(np.int8)[:initial_size_bytes]
+                                    decrypted_np = to_bytes(decrypted)[:initial_size_bytes]
 
                                     aes = create_aes(mode, key_np)
 
@@ -432,12 +452,12 @@ class TestCSPRNG(unittest.TestCase):
         for key_dtype in self.all_dtypes:
             key_size = key_size_bytes // sizeof(key_dtype)
             key = torch.empty(key_size, dtype=key_dtype).random_()
-            key_np = key.numpy().view(np.int8)
+            key_np = to_bytes(key)
             for initial_dtype in self.all_dtypes:
                 for initial_size_bytes in [0, 16, 256]:
                     initial_size = initial_size_bytes // sizeof(initial_dtype)
                     initial = torch.empty(initial_size, dtype=initial_dtype).random_()
-                    initial_np = initial.numpy().view(np.int8)
+                    initial_np = to_bytes(initial)
                     initial_np_copy = np.copy(initial_np)
                     for mode in ["ecb", "ctr"]:
                         for device in self.all_devices:
@@ -445,7 +465,7 @@ class TestCSPRNG(unittest.TestCase):
                             initial = initial.to(device)
 
                             csprng.encrypt(initial, initial, key, "aes128", mode)
-                            encrypted_np = initial.cpu().numpy().view(np.int8)
+                            encrypted_np = to_bytes(initial)
                             aes = create_aes(mode, key_np)
                             encrypted_expected = np.frombuffer(aes.encrypt(initial_np_copy.tobytes()), dtype=np.int8)
                             self.assertTrue(np.array_equal(encrypted_np, encrypted_expected))
@@ -453,7 +473,7 @@ class TestCSPRNG(unittest.TestCase):
                             encrypted_np_copy = np.copy(encrypted_np)
 
                             csprng.decrypt(initial, initial, key, "aes128", mode)
-                            decrypted_np = initial.cpu().numpy().view(np.int8)
+                            decrypted_np = to_bytes(initial)
                             aes = create_aes(mode, key_np)
                             decrypted_expected = np.frombuffer(aes.decrypt(encrypted_np_copy.tobytes()), dtype=np.int8)
                             self.assertTrue(np.array_equal(decrypted_np, decrypted_expected))
