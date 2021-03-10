@@ -99,7 +99,7 @@ class TestCSPRNG(unittest.TestCase):
                     res = stats.kstest(to_numpy(t.cpu()), stats.randint.cdf, args=(0, to_))
                     self.assertTrue(res.statistic < 0.1)
 
-    @unittest.skipIf(no_cuda or dtype, no_cuda_message)
+    @unittest.skipIf(no_cuda, no_cuda_message)
     def test_random_to_cpu_vs_cuda(self):
         to_ = 42
         for dtype in self.num_dtypes:
