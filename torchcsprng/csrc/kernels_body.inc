@@ -102,6 +102,8 @@ struct UIntType {};
 
 template <> struct UIntType<double> { using type = uint64_t; };
 template <> struct UIntType<float> { using type = uint32_t; };
+template <> struct UIntType<c10::Half> { using type = uint32_t; }; // maybe uint16_t?
+template <> struct UIntType<c10::BFloat16> { using type = uint32_t; }; // maybe uint16_t?
 template <> struct UIntType<int64_t> { using type = uint64_t; };
 template <> struct UIntType<int32_t> { using type = uint32_t; };
 template <> struct UIntType<int16_t> { using type = uint32_t; };

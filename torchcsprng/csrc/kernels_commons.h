@@ -9,6 +9,8 @@
 #pragma once
 
 #include <random>
+#include <c10/util/BFloat16.h>
+#include <c10/util/Half.h>
 #include <ATen/Generator.h>
 #include <ATen/Tensor.h>
 #include <ATen/core/DistributionsHelper.h>
