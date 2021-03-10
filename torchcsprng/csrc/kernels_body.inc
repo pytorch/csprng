@@ -116,7 +116,7 @@ struct RandomKernel {
   void operator()(TensorIterator& iter, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_ALL_TYPES_AND(ScalarType::Bool, iter.dtype(), "random_kernel", [&] {
+    AT_DISPATCH_ALL_TYPES_AND3(at::ScalarType::Bool, at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "random_kernel", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type>(iter, key,
         [] TORCH_CSPRNG_HOST_DEVICE (RNGValues<1>* generator) -> scalar_t {
           uniform_int_distribution<scalar_t> random;
@@ -168,7 +168,7 @@ struct RandomFromToKernel {
   void operator()(TensorIterator& iter, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_ALL_TYPES_AND(at::ScalarType::BFloat16, iter.dtype(), "random_full_64_bits_range_kernel", [&] {
+    AT_DISPATCH_ALL_TYPES_AND3(at::ScalarType::Bool, at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "random_full_64_bits_range_kernel", [&] {
       if (std::is_same<scalar_t, int64_t>::value ||
           std::is_same<scalar_t, double>::value ||
           std::is_same<scalar_t, float>::value ||
@@ -201,7 +201,7 @@ struct UniformKernel {
   void operator()(TensorIterator& iter, double from, double to, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "uniform_kernel", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "uniform_kernel", [&] {
       aes_helper<scalar_t, uint64_t>(iter, key,
         [from, to] TORCH_CSPRNG_HOST_DEVICE (RNGValues<1>* generator) -> scalar_t {
           uniform_real_distribution<double> uniform(from, to);
@@ -224,7 +224,7 @@ struct NormalKernel {
     auto iter = TensorIterator::nullary_op(self);
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "normal_kernel", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "normal_kernel", [&] {
       aes_helper<scalar_t, uint64_t, 2>(iter, key,
         [mean, std] TORCH_CSPRNG_HOST_DEVICE (RNGValues<2>* gen) -> scalar_t {
           normal_distribution<double> normal(mean, std);
@@ -270,7 +270,7 @@ struct CauchyKernel {
   void operator()(TensorIterator& iter, double median, double sigma, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "cauchy_kernel", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "cauchy_kernel", [&] {
       aes_helper<scalar_t, uint64_t, 1>(iter, key,
         [median, sigma] TORCH_CSPRNG_HOST_DEVICE (RNGValues<1>* gen) -> scalar_t {
           cauchy_distribution<double> cauchy(median, sigma);
@@ -292,7 +292,7 @@ struct LogNormalKernel {
   void operator()(TensorIterator& iter, double mean, double std, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "log_normal", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "log_normal", [&] {
       aes_helper<scalar_t, uint64_t, 2>(iter, key,
         [mean, std] TORCH_CSPRNG_HOST_DEVICE (RNGValues<2>* gen) -> scalar_t {
           lognormal_distribution<double> logNormal(mean, std);
@@ -314,7 +314,7 @@ struct GeometricKernel {
   void operator()(TensorIterator& iter, double p, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "geometric_kernel", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "geometric_kernel", [&] {
       aes_helper<scalar_t, UIntType<scalar_t>::type, 1>(iter, key,
         [p] TORCH_CSPRNG_HOST_DEVICE (RNGValues<1>* gen) -> scalar_t {
           geometric_distribution<scalar_t> geometric(p);
@@ -336,7 +336,7 @@ struct ExponentialKernel {
   void operator()(TensorIterator& iter, double lambda, c10::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
-    AT_DISPATCH_FLOATING_TYPES(iter.dtype(), "exponential_kernel", [&] {
+    AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "exponential_kernel", [&] {
       aes_helper<scalar_t, uint64_t, 1>(iter, key,
         [lambda] TORCH_CSPRNG_HOST_DEVICE (RNGValues<1>* gen) -> scalar_t {
           exponential_distribution<double> exponential(lambda);
