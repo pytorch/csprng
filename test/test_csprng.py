@@ -179,7 +179,7 @@ class TestCSPRNG(unittest.TestCase):
                         gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').uniform_(from_, to_, generator=gen)
                         if dtype in self.non_standard_fp_dtypes:
-                            print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
+                            print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
                         self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_normal_kstest(self):
@@ -202,7 +202,7 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').normal_(mean=mean, std=std, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
+                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_log_normal_kstest(self):
@@ -228,7 +228,7 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').log_normal_(mean=mean, std=std, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
+                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-4)
 
     def test_exponential_kstest(self):
@@ -274,7 +274,7 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').cauchy_(median=median, sigma=sigma, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
+                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
                     self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_geometric(self):
@@ -290,14 +290,14 @@ class TestCSPRNG(unittest.TestCase):
 
     @unittest.skipIf(no_cuda, no_cuda_message)
     def test_geometric_cpu_vs_cuda(self):
-        for dtype in self.fp_ddtypes:
+        for dtype in self.fp_dtypes:
             for p in [0.2, 0.5, 0.8]:
                 gen = csprng.create_mt19937_generator(42)
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').geometric_(p=p, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
                 if dtype in self.non_standard_fp_dtypes:
-                    print(f"Max error = {(cpu_t - cuda_t.cpu()).abs().max()}")
+                    print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
                 self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
 
     def test_non_contiguous_vs_contiguous(self):
