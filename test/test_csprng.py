@@ -33,6 +33,9 @@ def to_bytes(t):
         t = t.view(torch.int16)
     return t.cpu().numpy().view(np.int8)
 
+def max_error(a, b):
+    return (a.cpu().double() - b.cpu().double()).abs().max()
+
 class TestCSPRNG(unittest.TestCase):
 
     all_generators = [
@@ -179,8 +182,8 @@ class TestCSPRNG(unittest.TestCase):
                         gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').uniform_(from_, to_, generator=gen)
                         if dtype in self.non_standard_fp_dtypes:
-                            print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
-                        self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+                            print(f"Max error for {dtype} = {max_error(cpu_t, cuda_t)}")
+                        self.assertTrue(max_error(cpu_t, cuda_t) < 1e-9)
 
     def test_normal_kstest(self):
         for device in self.all_devices:
@@ -202,8 +205,8 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').normal_(mean=mean, std=std, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
-                    self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+                        print(f"Max error for {dtype} = {max_error(cpu_t, cuda_t)}")
+                    self.assertTrue(max_error(cpu_t, cuda_t) < 1e-9)
 
     def test_log_normal_kstest(self):
         for device in self.all_devices:
@@ -228,8 +231,8 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').log_normal_(mean=mean, std=std, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
-                    self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-4)
+                        print(f"Max error for {dtype} = {max_error(cpu_t, cuda_t)}")
+                    self.assertTrue(max_error(cpu_t, cuda_t) < 1e-4)
 
     def test_exponential_kstest(self):
         for device in self.all_devices:
@@ -249,7 +252,7 @@ class TestCSPRNG(unittest.TestCase):
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').exponential_(lambd=lambd, generator=gen)
-                self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+                self.assertTrue(max_error(cpu_t, cuda_t) < 1e-9)
 
     def test_cauchy_kstest(self):
         for device in self.all_devices:
@@ -274,8 +277,8 @@ class TestCSPRNG(unittest.TestCase):
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').cauchy_(median=median, sigma=sigma, generator=gen)
                     if dtype in self.non_standard_fp_dtypes:
-                        print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
-                    self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+                        print(f"Max error for {dtype} = {max_error(cpu_t, cuda_t)}")
+                    self.assertTrue(max_error(cpu_t, cuda_t) < 1e-9)
 
     def test_geometric(self):
         for device in self.all_devices:
@@ -297,8 +300,8 @@ class TestCSPRNG(unittest.TestCase):
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
                 if dtype in self.non_standard_fp_dtypes:
-                    print(f"Max error for {dtype} = {(cpu_t - cuda_t.cpu()).abs().max()}")
-                self.assertTrue((cpu_t - cuda_t.cpu()).abs().max() < 1e-9)
+                    print(f"Max error for {dtype} = {max_error(cpu_t, cuda_t)}")
+                self.assertTrue(max_error(cpu_t, cuda_t) < 1e-9)
 
     def test_non_contiguous_vs_contiguous(self):
         size = 10
