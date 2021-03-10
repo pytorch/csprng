@@ -34,7 +34,7 @@ class TestCSPRNG(unittest.TestCase):
 
     int_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64]
 
-    fp_ftypes = [torch.float, torch.double]
+    fp_ftypes = [torch.float, torch.double, torch.half, torch.bfloat16]
 
     num_dtypes = int_dtypes + fp_ftypes
 
@@ -317,9 +317,8 @@ class TestCSPRNG(unittest.TestCase):
 
     @unittest.skipIf(IS_SANDCASTLE or IS_FBCODE, "Does not work on Sandcastle")
     def test_version(self):
-        import torchcsprng.version as version
-        self.assertTrue(version.__version__)
-        self.assertTrue(version.git_version)
+        self.assertTrue(csprng.__version__)
+        self.assertTrue(csprng.git_version)
 
     def test_randperm(self):
         for device in self.all_devices:
