@@ -25,8 +25,8 @@ IS_FBCODE = os.getenv('PYTORCH_TEST_FBCODE') == '1'
 
 
 def to_numpy(t, dtype=torch.float):
-    if t.dtype in [torch.half, torch.bfloat16]:
-        return t.to(dtype).numpy()
+    if t.dtype == torch.bfloat16:
+        t = t.to(dtype)
     return t.numpy()
 
 
