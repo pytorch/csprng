@@ -181,7 +181,7 @@ class TestCSPRNG(unittest.TestCase):
                         cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').uniform_(from_, to_, generator=gen)
                         gen = csprng.create_mt19937_generator(42)
                         cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').uniform_(from_, to_, generator=gen)
-                        self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-9))
+                        self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-9))
 
     def test_normal_kstest(self):
         for device in self.all_devices:
@@ -202,7 +202,7 @@ class TestCSPRNG(unittest.TestCase):
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').normal_(mean=mean, std=std, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').normal_(mean=mean, std=std, generator=gen)
-                    self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-9))
+                    self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-9))
 
     def test_log_normal_kstest(self):
         for device in self.all_devices:
@@ -226,7 +226,7 @@ class TestCSPRNG(unittest.TestCase):
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').log_normal_(mean=mean, std=std, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').log_normal_(mean=mean, std=std, generator=gen)
-                    self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-4, equal_nan=True))
+                    self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-4, equal_nan=True))
 
     def test_exponential_kstest(self):
         for device in self.all_devices:
@@ -246,7 +246,7 @@ class TestCSPRNG(unittest.TestCase):
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').exponential_(lambd=lambd, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').exponential_(lambd=lambd, generator=gen)
-                self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-9))
+                self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-9))
 
     def test_cauchy_kstest(self):
         for device in self.all_devices:
@@ -270,7 +270,7 @@ class TestCSPRNG(unittest.TestCase):
                     cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').cauchy_(median=median, sigma=sigma, generator=gen)
                     gen = csprng.create_mt19937_generator(42)
                     cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').cauchy_(median=median, sigma=sigma, generator=gen)
-                    self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-9))
+                    self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-9))
 
     def test_geometric(self):
         for device in self.all_devices:
@@ -291,7 +291,7 @@ class TestCSPRNG(unittest.TestCase):
                 cpu_t = torch.empty(self.size, dtype=dtype, device='cpu').geometric_(p=p, generator=gen)
                 gen = csprng.create_mt19937_generator(42)
                 cuda_t = torch.empty(self.size, dtype=dtype, device='cuda').geometric_(p=p, generator=gen)
-                self.assertTrue(torch.allclose(cpu_t, cuda_t, 1e-9, equal_nan=True))
+                self.assertTrue(torch.allclose(cpu_t, cuda_t.cpu(), 1e-9, equal_nan=True))
 
     def test_non_contiguous_vs_contiguous(self):
         size = 10
