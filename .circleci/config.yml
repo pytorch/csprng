@@ -83,6 +83,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
+      - run: yum install -y openssl-devel
       - run: packaging/build_wheel.sh
       - store_artifacts:
           path: dist
@@ -98,6 +99,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
+      - run: yum install -y openssl-devel
       - run:
           no_output_timeout: 20m
           command: packaging/build_conda.sh
@@ -265,6 +267,7 @@ jobs:
           keys:
             - env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
 
+      - run: yum install -y openssl-devel
       - run:
           name: Setup
           command: .circleci/unittest/linux/scripts/setup_env.sh
@@ -306,6 +309,7 @@ jobs:
           keys:
             - env-v2-linux-{{ arch }}-py<< parameters.python_version >>-{{ checksum ".circleci/unittest/linux/scripts/environment.yml" }}-{{ checksum ".circleci-weekly" }}
 
+      - run: apt-get install -y libssl-dev
       - run:
           name: Setup
           command: docker run -e PYTHON_VERSION -t --gpus all -v $PWD:$PWD -w $PWD "${image_name}" .circleci/unittest/linux/scripts/setup_env.sh

@@ -6,8 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-namespace aes {
-
 // This AES implementation is based on
 // https://github.com/kokke/tiny-AES-c/blob/master/aes.c
 // authored by kokke and et al. and distributed under public domain license.
@@ -384,6 +382,4 @@ TORCH_CSPRNG_HOST_DEVICE void decrypt(uint8_t* state, const uint8_t* key) {
     }
     InvMixColumns((state_t*)state);
   }
-}
-
 }

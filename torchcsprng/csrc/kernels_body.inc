@@ -6,7 +6,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+namespace aes {
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #include "aes.inc"
+#else
+#include "aes_openssl.inc"
+#endif
+}
 
 // Generates `block_t_size`-bytes random key Tensor on CPU
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`

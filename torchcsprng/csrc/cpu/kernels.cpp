@@ -7,6 +7,8 @@
  */
 
 #include "../kernels_commons.h"
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 namespace torch {
 namespace csprng {

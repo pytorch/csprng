@@ -72,8 +72,9 @@ def get_extensions():
 
     main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
     source_cpu = glob.glob(os.path.join(extensions_dir, 'cpu', '*.cpp'))
+    source_openssl = glob.glob(os.path.join(extensions_dir, 'openssl', '*.cpp'))
 
-    sources = main_file + source_cpu
+    sources = main_file + source_cpu + source_openssl
     extension = CppExtension
 
     define_macros = []
@@ -119,6 +120,7 @@ def get_extensions():
             sources,
             define_macros=define_macros,
             extra_compile_args=extra_compile_args,
+            libraries=['dl'],
         )
     ]
 
