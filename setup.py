@@ -64,8 +64,6 @@ def get_extensions():
     build_cuda = torch.cuda.is_available() or os.getenv('FORCE_CUDA',
                                                         '0') == '1'
 
-    use_openssl = os.getenv('USE_OPENSSL', '0') == '1'
-
     module_name = 'torchcsprng'
 
     extensions_dir = os.path.join(cwd, module_name, 'csrc')
@@ -74,8 +72,9 @@ def get_extensions():
 
     main_file = glob.glob(os.path.join(extensions_dir, '*.cpp'))
     source_cpu = glob.glob(os.path.join(extensions_dir, 'cpu', '*.cpp'))
+    source_openssl = glob.glob(os.path.join(extensions_dir, 'openssl', '*.cpp'))
 
-    sources = main_file + source_cpu
+    sources = main_file + source_cpu + source_openssl
     extension = CppExtension
 
     define_macros = []
@@ -90,6 +89,8 @@ def get_extensions():
             cxx_flags = append_flags(cxx_flags, ['-fopenmp'])
         elif sys.platform == 'win32':
             cxx_flags = append_flags(cxx_flags, ['/openmp'])
+        # elif sys.platform == 'darwin':
+        #     cxx_flags = append_flags(cxx_flags, ['-Xpreprocessor', '-fopenmp'])
 
     if build_cuda:
         extension = CUDAExtension
@@ -113,18 +114,13 @@ def get_extensions():
             'cxx': cxx_flags,
         }
 
-    libraries = []
-    if use_openssl:
-        define_macros += [('USE_OPENSSL', None)]
-        libraries.append('crypto')
-
     ext_modules = [
         extension(
             module_name + '._C',
             sources,
             define_macros=define_macros,
             extra_compile_args=extra_compile_args,
-            libraries=libraries,
+            libraries=['dl'],
         )
     ]
 
@@ -175,6 +171,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
