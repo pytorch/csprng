@@ -83,7 +83,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
-      - run: apt-get update && apt-get install -y libssl-dev
+      - run: yum install openssl-devel
       - run: packaging/build_wheel.sh
       - store_artifacts:
           path: dist
@@ -99,7 +99,7 @@ jobs:
     resource_class: 2xlarge+
     steps:
       - checkout_merge
-      - run: apt-get update && apt-get install -y libssl-dev
+      - run: yum install openssl-devel
       - run:
           no_output_timeout: 20m
           command: packaging/build_conda.sh
