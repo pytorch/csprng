@@ -80,6 +80,7 @@ The following is the corresponding CSPRNG versions and supported Python versions
 
 | PyTorch | CSPRNG | Python   | CUDA             |
 |---------|--------|----------|------------------|
+| 1.8.1   | 0.2.1  | 3.7-3.9  | 10.1, 10.2, 11.1 |
 | 1.8.0   | 0.2.0  | 3.7-3.9  | 10.1, 10.2, 11.1 |
 | 1.7.1   | 0.1.4  | 3.6-3.8  | 9.2, 10.1, 10.2  |
 | 1.7.0   | 0.1.3  | 3.6-3.8  | 9.2, 10.1, 10.2  |
