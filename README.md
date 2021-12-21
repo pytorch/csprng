@@ -209,3 +209,5 @@ torchcsprng is BSD 3-clause licensed. See the license file [here](https://github
 ## [Terms of Use](https://opensource.facebook.com/legal/terms)
 
 ## [Privacy Policy](https://opensource.facebook.com/legal/privacy)
+
+Copyright © 2020 Meta Platforms, Inc
