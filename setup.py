@@ -51,12 +51,9 @@ write_version_file()
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-pytorch_dep = "torch"
-if os.getenv("PYTORCH_VERSION"):
-    pytorch_dep += "==" + os.getenv("PYTORCH_VERSION")
 
 requirements = [
-    pytorch_dep,
+    "torch",
 ]
 
 
