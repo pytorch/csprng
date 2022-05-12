@@ -72,13 +72,13 @@ class TestCSPRNG(unittest.TestCase):
             for gen in self.all_generators:
                 for dtype in self.num_dtypes:
                     if dtype == torch.float:
-                        to_inc = 2 ** 24
+                        to_inc = 2**24
                     elif dtype == torch.double:
-                        to_inc = 2 ** 53
+                        to_inc = 2**53
                     elif dtype == torch.half:
-                        to_inc = 2 ** 11
+                        to_inc = 2**11
                     elif dtype == torch.bfloat16:
-                        to_inc = 2 ** 8
+                        to_inc = 2**8
                     else:
                         to_inc = torch.iinfo(dtype).max
 
