@@ -317,20 +317,8 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // ====================================================================================================================
 
-Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
-  if (token.has_value()) {
-    return make_generator<CSPRNGGeneratorImpl>(*token);
-  } else {
-    return make_generator<CSPRNGGeneratorImpl>(true);
-  }
-}
-
-Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) {
-  if (seed.has_value()) {
-    return make_generator<CSPRNGGeneratorImpl>(*seed);
-  } else {
-    return make_generator<CSPRNGGeneratorImpl>(false);
-  }
+Generator create_stream_generator_(Tensor key) {
+  return make_generator<CSPRNGGeneratorImpl>(key);
 }
 
 bool supports_cuda() {
@@ -370,8 +358,7 @@ TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("supports_cuda", &supports_cuda);
-  m.def("create_random_device_generator", &create_random_device_generator, py::arg("token") = nullptr);
-  m.def("create_mt19937_generator", &create_mt19937_generator, py::arg("seed") = nullptr);
+  m.def("create_stream_generator_", &create_stream_generator_);
   m.def("encrypt", &encrypt_pybind);
   m.def("decrypt", &decrypt_pybind);
 }
