@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <sodium.h>
+
 #include <random>
 #include <ATen/Generator.h>
 #include <ATen/Tensor.h>
@@ -22,7 +24,7 @@ inline uint64_t make64BitsFrom32Bits(uint32_t hi, uint32_t lo) {
 
 // CUDA CSPRNG is actually CPU generator which is used only to generate a random key on CPU for AES running in a block mode on CUDA
 struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
-  CSPRNGGeneratorImpl(Tensor key) : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, key_{key} {}
+  CSPRNGGeneratorImpl(at::Tensor key) : c10::GeneratorImpl{at::Device(at::DeviceType::CPU), at::DispatchKeySet(at::DispatchKey::CustomRNGKeyId)}, key_{key} {}
   ~CSPRNGGeneratorImpl() = default;
   uint32_t random() { return 0; }
   uint64_t random64() { return 0; }
@@ -37,7 +39,7 @@ struct CSPRNGGeneratorImpl : public c10::GeneratorImpl {
   void set_state(const c10::TensorImpl& new_state) override { throw std::runtime_error("not implemented"); }
   c10::intrusive_ptr<c10::TensorImpl> get_state() const override { throw std::runtime_error("not implemented"); }
 
-  &Tensor key() { return &key_; }
+  at::Tensor& key() { return key_; }
 
-  Tensor key_;
+  at::Tensor key_;
 };
