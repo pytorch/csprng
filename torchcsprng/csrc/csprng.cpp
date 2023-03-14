@@ -263,7 +263,9 @@ namespace {
 
     for(int64_t i = 0; i < n - 1; i++)
     {
-      int64_t z = gen->random() % (n-i);
+      int64_t z = 0;
+      gen->random_subkey((uint8_t*) &z, sizeof(z));
+      z %= n - i;
       scalar_t sav = r__data[i*r__stride_0];
       r__data[i*r__stride_0] = r__data[(z+i)*r__stride_0];
       r__data[(z+i)*r__stride_0] = sav;

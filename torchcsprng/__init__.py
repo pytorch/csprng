@@ -15,19 +15,19 @@ from . import _modinfo
 
 
 @lru_cache(maxsize=1)
-def load_module():
+def load_module(verbose: bool = True):
     build_cuda = torch.cuda.is_available() or os.getenv("FORCE_CUDA", "0") == "1"
     openmp = "ATen parallel backend: OpenMP" in torch.__config__.parallel_info()
 
     cflags = ["-Wall", "-Wextra", "-Wno-unused"]
     cuda_cflags = [
-        "-std=c++14",
+        "-std=c++20",
         f"--compiler-options={' '.join(cflags)!r}",
         "--expt-extended-lambda",
         "-Xcompiler",
     ]
     define_macros = []
-    ldflags = []
+    ldflags = ["-lsodium"]
 
     if openmp:
         ldflags += ["-fopenmp"]
@@ -52,19 +52,29 @@ def load_module():
         extra_cuda_cflags=cuda_cflags,
         extra_ldflags=ldflags,
         build_directory=_modinfo.BUILD_DIR,
-        verbose=True,
+        verbose=verbose,
     )
 
 
 def create_stream_generator(
     key: Optional[torch.Tensor] = None, device: Union[torch.device, str] = "cpu"
 ) -> torch.Generator:
+    REQUIRED_KEY_LENGTH = 32
+
     module = load_module()
     if isinstance(device, str):
         device = torch.device(device)
     if key is None:
-        key = torch.Tensor([b for b in token_bytes(12)])
+        key = torch.Tensor([b for b in token_bytes(REQUIRED_KEY_LENGTH)])
         key = key.to(dtype=torch.uint8, device=device)
+
+    if key.dtype != torch.uint8:
+        raise ValueError("dtype of key must be torch.uint8")
+    if key.ndim != 1:
+        raise ValueError("key must be 1D vector")
+    if key.size(0) != REQUIRED_KEY_LENGTH:
+        raise ValueError(f"invalid key length: required {REQUIRED_KEY_LENGTH} bytes, got {key.size(0)} bytes")
+
     return module.create_stream_generator_(key)
 
 
