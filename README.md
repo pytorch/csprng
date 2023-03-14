@@ -1,5 +1,30 @@
 # PyTorch/CSPRNG
 
+**IMPORTANT NOTE:** this is a fork of the original
+[pytorch/csprng](https://github.com/pytorch/csprng) repo, which is missing some
+useful features (e.g. reproducible CSPRNG). This fork is not especially
+well-documented at the moment; its main difference over the original repo is
+that it replaces `create_random_device_generator` and
+`create_mt19937_generator` with a single `create_generator` function, with uses
+HKDF-HMAC-Blake2b to generate subkeys for AES.
+
+To install it, you can run
+
+```
+pip install git+https://github.com/kernelmethod/csprng.git@main
+```
+
+Alternatively, add the following to your `requirements.txt`:
+
+```
+torchcsprng @ git+https://github.com/kernelmethod/csprng.git@main
+```
+
+This library **has not** received an audit, and you should think carefully
+before using it in a production system.
+
+---
+
 [![CircleCI](https://circleci.com/gh/pytorch/csprng.svg?style=shield&circle-token=64701692dd7f13f31019612289f0200fdb661dc2)](https://circleci.com/gh/pytorch/csprng)
 
 torchcsprng is a [PyTorch C++/CUDA extension](https://pytorch.org/tutorials/advanced/cpp_extension.html) that provides:
