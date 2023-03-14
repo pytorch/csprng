@@ -15,7 +15,7 @@ at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generato
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
   auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  gen->random_subkey(key.data_ptr<uint8_t>(), block_t_size);
+  gen->random_subkey(key.data_ptr<uint8_t>(), key.size(0));
   return key;
 }
 

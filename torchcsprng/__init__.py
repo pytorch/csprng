@@ -19,12 +19,13 @@ def load_module(verbose: bool = True):
     build_cuda = torch.cuda.is_available() or os.getenv("FORCE_CUDA", "0") == "1"
     openmp = "ATen parallel backend: OpenMP" in torch.__config__.parallel_info()
 
-    cflags = ["-Wall", "-Wextra", "-Wno-unused"]
+    cflags = ["-Wall", "-Wextra", "-Wno-unused", "-O3"]
     cuda_cflags = [
         "-std=c++20",
         f"--compiler-options={' '.join(cflags)!r}",
         "--expt-extended-lambda",
         "-Xcompiler",
+        "-O3",
     ]
     define_macros = []
     ldflags = ["-lsodium"]

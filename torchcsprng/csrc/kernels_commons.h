@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define _CSPRNG_SUBKEY_CTX    "subkey"
+#define _CSPRNG_SUBKEY_CTX    "randsubk"
 
 #include <sodium.h>
 
