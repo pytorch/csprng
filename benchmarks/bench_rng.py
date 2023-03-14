@@ -107,4 +107,4 @@ if __name__ == "__main__":
 
         gen = csprng.create_stream_generator()
         print(f"CSPRNG time:        {bench_randint((args.size,), gen, device):.4f}")
-        print(f"CSPRNG time:        {bench_randn((args.size,), gen, device):.4f}")
+        print(f"CSPRNG randn time:  {bench_randn((args.size,), gen, device):.4f}")
