@@ -319,7 +319,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // ====================================================================================================================
 
-Generator create_stream_generator_(Tensor key) {
+Generator create_generator_(Tensor key) {
   return make_generator<CSPRNGGeneratorImpl>(key);
 }
 
@@ -360,7 +360,7 @@ TORCH_LIBRARY_IMPL(aten, CustomRNGKeyId, m) {
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("supports_cuda", &supports_cuda);
-  m.def("create_stream_generator_", &create_stream_generator_);
+  m.def("create_generator_", &create_generator_);
   m.def("encrypt", &encrypt_pybind);
   m.def("decrypt", &decrypt_pybind);
 }

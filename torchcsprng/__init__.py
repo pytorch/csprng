@@ -57,9 +57,18 @@ def load_module(verbose: bool = True):
     )
 
 
-def create_stream_generator(
+def create_generator(
     key: Optional[torch.Tensor] = None, device: Union[torch.device, str] = "cpu"
 ) -> torch.Generator:
+    """Create a ``torch.Generator`` instance for cryptographically secure pseudo-random
+    number generation (CSPRNG).
+
+    This function may be called with a master key parameter ``key``; otherwise, a key
+    will be generated for you from your operating system's random stream. The generator
+    returned by this function will derive subkeys using HKDF-Blake2b, which are then
+    used with AES-CTR to generate random streams of data.
+    """
+
     REQUIRED_KEY_LENGTH = 32
 
     module = load_module()
@@ -76,7 +85,7 @@ def create_stream_generator(
     if key.size(0) != REQUIRED_KEY_LENGTH:
         raise ValueError(f"invalid key length: required {REQUIRED_KEY_LENGTH} bytes, got {key.size(0)} bytes")
 
-    return module.create_stream_generator_(key)
+    return module.create_generator_(key)
 
 
 try:
