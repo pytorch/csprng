@@ -8,3 +8,6 @@ torchcsprng/version.py
 */__pycache__
 .pytest_cache
 *.so
+
+# Build directory for JIT compilation
+torchcsprng/_build/
