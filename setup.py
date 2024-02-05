@@ -7,12 +7,7 @@ import sys
 
 import torch
 from setuptools import find_packages, setup
-from torch.utils.cpp_extension import (
-    BuildExtension,
-    CppExtension,
-    CUDA_HOME,
-    CUDAExtension,
-)
+from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension
 
 version = open("version.txt", "r").read().strip()
 sha = "Unknown"
