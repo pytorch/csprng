@@ -15,7 +15,7 @@ at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generato
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
   auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
-  using random_t = typename std::result_of<decltype(&RNG::random)(RNG)>::type;
+  using random_t = typename std::invoke_result_t<decltype(&RNG::random), RNG>;
   constexpr size_t random_t_size = sizeof(random_t);
   for (size_t i = 0; i < block_t_size / random_t_size; i++) {
     const auto rand = gen->random();
