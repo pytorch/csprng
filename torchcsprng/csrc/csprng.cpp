@@ -26,7 +26,7 @@ static const auto TENSOR_DEVICE_TYPE_IS_NOT_SUPPORTED = "tensor device type is n
 
 // ==================================================== Random ========================================================
 
-Tensor& random_(Tensor& self, c10::optional<Generator> gen) {
+Tensor& random_(Tensor& self, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::random_(self, gen);
 #ifdef WITH_CUDA
@@ -39,7 +39,7 @@ Tensor& random_(Tensor& self, c10::optional<Generator> gen) {
 }
 
 Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to,
-                       c10::optional<Generator> gen) {
+                       std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::random_from_to(self, from, to, gen);
 #ifdef WITH_CUDA
@@ -52,7 +52,7 @@ Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to,
 }
 
 Tensor& random_to(Tensor& self, int64_t to,
-                  c10::optional<Generator> gen) {
+                  std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::random_to(self, to, gen);
 #ifdef WITH_CUDA
@@ -66,7 +66,7 @@ Tensor& random_to(Tensor& self, int64_t to,
 
 // ==================================================== Uniform =======================================================
 
-Tensor& uniform_(Tensor& self, double from, double to, c10::optional<Generator> gen) {
+Tensor& uniform_(Tensor& self, double from, double to, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::uniform_(self, from, to, gen);
 #ifdef WITH_CUDA
@@ -80,7 +80,7 @@ Tensor& uniform_(Tensor& self, double from, double to, c10::optional<Generator> 
 
 // ==================================================== Normal ========================================================
 
-Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> gen) {
+Tensor& normal_(Tensor& self, double mean, double std, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::normal_(self, mean, std, gen);
 #ifdef WITH_CUDA
@@ -92,7 +92,7 @@ Tensor& normal_(Tensor& self, double mean, double std, c10::optional<Generator> 
   }
 }
 
-Tensor& normal_Tensor_float_out(const Tensor& mean, double std, c10::optional<Generator> gen, Tensor& output) {
+Tensor& normal_Tensor_float_out(const Tensor& mean, double std, std::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_float_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -104,7 +104,7 @@ Tensor& normal_Tensor_float_out(const Tensor& mean, double std, c10::optional<Ge
   }
 }
 
-Tensor& normal_float_Tensor_out(double mean, const Tensor& std, c10::optional<Generator> gen, Tensor& output) {
+Tensor& normal_float_Tensor_out(double mean, const Tensor& std, std::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_float_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -116,7 +116,7 @@ Tensor& normal_float_Tensor_out(double mean, const Tensor& std, c10::optional<Ge
   }
 }
 
-Tensor& normal_Tensor_Tensor_out(const Tensor& mean, const Tensor& std, c10::optional<Generator> gen, Tensor& output) {
+Tensor& normal_Tensor_Tensor_out(const Tensor& mean, const Tensor& std, std::optional<Generator> gen, Tensor& output) {
   if (output.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_Tensor_out(output, mean, std, gen);
 #ifdef WITH_CUDA
@@ -128,7 +128,7 @@ Tensor& normal_Tensor_Tensor_out(const Tensor& mean, const Tensor& std, c10::opt
   }
 }
 
-Tensor normal_Tensor_float(const Tensor& mean, double std, c10::optional<Generator> gen) {
+Tensor normal_Tensor_float(const Tensor& mean, double std, std::optional<Generator> gen) {
   if (mean.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_float(mean, std, gen);
 #ifdef WITH_CUDA
@@ -140,7 +140,7 @@ Tensor normal_Tensor_float(const Tensor& mean, double std, c10::optional<Generat
   }
 }
 
-Tensor normal_float_Tensor(double mean, const Tensor& std, c10::optional<Generator> gen) {
+Tensor normal_float_Tensor(double mean, const Tensor& std, std::optional<Generator> gen) {
   if (std.device().type() == DeviceType::CPU) {
     return cpu::normal_float_Tensor(mean, std, gen);
 #ifdef WITH_CUDA
@@ -152,7 +152,7 @@ Tensor normal_float_Tensor(double mean, const Tensor& std, c10::optional<Generat
   }
 }
 
-Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, c10::optional<Generator> gen) {
+Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, std::optional<Generator> gen) {
   if (mean.device().type() == DeviceType::CPU) {
     return cpu::normal_Tensor_Tensor(mean, std, gen);
 #ifdef WITH_CUDA
@@ -166,7 +166,7 @@ Tensor normal_Tensor_Tensor(const Tensor& mean, const Tensor& std, c10::optional
 
 // ==================================================== Cauchy ========================================================
 
-Tensor& cauchy_(Tensor& self, double median, double sigma, c10::optional<Generator> gen) {
+Tensor& cauchy_(Tensor& self, double median, double sigma, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::cauchy_(self, median, sigma, gen);
 #ifdef WITH_CUDA
@@ -180,7 +180,7 @@ Tensor& cauchy_(Tensor& self, double median, double sigma, c10::optional<Generat
 
 // ================================================== LogNormal =======================================================
 
-Tensor& log_normal_(Tensor& self, double mean, double std, c10::optional<Generator> gen) {
+Tensor& log_normal_(Tensor& self, double mean, double std, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::log_normal_(self, mean, std, gen);
 #ifdef WITH_CUDA
@@ -194,7 +194,7 @@ Tensor& log_normal_(Tensor& self, double mean, double std, c10::optional<Generat
 
 // ================================================== Geometric =======================================================
 
-Tensor& geometric_(Tensor& self, double p, c10::optional<Generator> gen) {
+Tensor& geometric_(Tensor& self, double p, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::geometric_(self, p, gen);
 #ifdef WITH_CUDA
@@ -208,7 +208,7 @@ Tensor& geometric_(Tensor& self, double p, c10::optional<Generator> gen) {
 
 // ================================================== Exponential =====================================================
 
-Tensor& exponential_(Tensor& self, double lambda, c10::optional<Generator> gen) {
+Tensor& exponential_(Tensor& self, double lambda, std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::exponential_(self, lambda, gen);
 #ifdef WITH_CUDA
@@ -248,7 +248,7 @@ namespace {
   }
 
   template <typename scalar_t, typename RNG>
-  void randperm(Tensor& result, int64_t n, c10::optional<at::Generator> generator) {
+  void randperm(Tensor& result, int64_t n, std::optional<at::Generator> generator) {
     auto gen = at::check_generator<RNG>(generator);
     scalar_t *r__data = result.data_ptr<scalar_t>();
 
@@ -271,7 +271,7 @@ namespace {
   }
 } // namespace
 
-Tensor& randperm_generator_out(int64_t n, c10::optional<Generator> generator, Tensor& result) {
+Tensor& randperm_generator_out(int64_t n, std::optional<Generator> generator, Tensor& result) {
   TORCH_CHECK(n >= 0, "n must be non-negative, got", n);
   check_supported_max_int_with_precision(n, result);
   if (result.device().type() == at::kCUDA) {
@@ -317,7 +317,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // ====================================================================================================================
 
-Generator create_random_device_generator(c10::optional<std::string> token = c10::nullopt) {
+Generator create_random_device_generator(std::optional<std::string> token = c10::nullopt) {
   if (token.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*token);
   } else {
@@ -325,7 +325,7 @@ Generator create_random_device_generator(c10::optional<std::string> token = c10:
   }
 }
 
-Generator create_mt19937_generator(c10::optional<uint64_t> seed = c10::nullopt) {
+Generator create_mt19937_generator(std::optional<uint64_t> seed = c10::nullopt) {
   if (seed.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*seed);
   } else {

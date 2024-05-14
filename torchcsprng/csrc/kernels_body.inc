@@ -11,7 +11,7 @@
 // using `generator`, which must be an instance of `at::CPUGeneratorImpl`
 // and passes it to the `device`.
 template<typename RNG>
-at::Tensor key_tensor(size_t block_t_size, c10::optional<at::Generator> generator) {
+at::Tensor key_tensor(size_t block_t_size, std::optional<at::Generator> generator) {
   std::lock_guard<std::mutex> lock(generator->mutex());
   auto gen = at::check_generator<RNG>(generator);
   auto key = torch::empty({static_cast<signed long>(block_t_size)}, torch::kUInt8);
@@ -114,7 +114,7 @@ template <> struct UIntType<bool> { using type = uint32_t; };
 
 template<typename RNG>
 struct RandomKernel {
-  void operator()(TensorIterator& iter, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_ALL_TYPES_AND3(at::ScalarType::Bool, at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "random_kernel", [&] {
@@ -150,7 +150,7 @@ void random_full_range_kernel_helper(TensorIterator& iter, const uint8_t* key) {
 
 template<typename RNG>
 struct RandomFromToKernel {
-  void operator()(TensorIterator& iter, uint64_t range, int64_t base, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, uint64_t range, int64_t base, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_ALL_TYPES_AND3(at::ScalarType::Bool, at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "random_from_to_kernel", [&] {
@@ -166,7 +166,7 @@ struct RandomFromToKernel {
       }
     });
   }
-  void operator()(TensorIterator& iter, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_ALL_TYPES_AND3(at::ScalarType::Bool, at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "random_full_64_bits_range_kernel", [&] {
@@ -183,15 +183,15 @@ struct RandomFromToKernel {
   }
 };
 
-at::Tensor& random_(at::Tensor& self, c10::optional<at::Generator> generator) {
+at::Tensor& random_(at::Tensor& self, std::optional<at::Generator> generator) {
   return at::native::templates::random_impl<RandomKernel, CSPRNGGeneratorImpl>(self, generator);
 }
 
-at::Tensor& random_from_to(at::Tensor& self, int64_t from, c10::optional<int64_t> to, c10::optional<at::Generator> generator) {
+at::Tensor& random_from_to(at::Tensor& self, int64_t from, std::optional<int64_t> to, c10::optional<at::Generator> generator) {
   return at::native::templates::random_from_to_impl<RandomFromToKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
-at::Tensor& random_to(at::Tensor& self, int64_t to, c10::optional<at::Generator> generator) {
+at::Tensor& random_to(at::Tensor& self, int64_t to, std::optional<at::Generator> generator) {
   return random_from_to(self, 0, to, generator);
 }
 
@@ -199,7 +199,7 @@ at::Tensor& random_to(at::Tensor& self, int64_t to, c10::optional<at::Generator>
 
 template<typename RNG>
 struct UniformKernel {
-  void operator()(TensorIterator& iter, double from, double to, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, double from, double to, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "uniform_kernel", [&] {
@@ -213,7 +213,7 @@ struct UniformKernel {
   }
 };
 
-at::Tensor& uniform_(at::Tensor& self, double from, double to, c10::optional<at::Generator> generator) {
+at::Tensor& uniform_(at::Tensor& self, double from, double to, std::optional<at::Generator> generator) {
   return at::native::templates::uniform_impl_<UniformKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
@@ -221,7 +221,7 @@ at::Tensor& uniform_(at::Tensor& self, double from, double to, c10::optional<at:
 
 template<typename RNG>
 struct NormalKernel {
-  void operator()(Tensor& self, double mean, double std, c10::optional<Generator> generator) {
+  void operator()(Tensor& self, double mean, double std, std::optional<Generator> generator) {
     auto iter = TensorIterator::nullary_op(self);
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
@@ -236,31 +236,31 @@ struct NormalKernel {
   }
 };
 
-at::Tensor& normal_(at::Tensor& self, double mean, double std, c10::optional<at::Generator> generator) {
+at::Tensor& normal_(at::Tensor& self, double mean, double std, std::optional<at::Generator> generator) {
   return at::native::templates::normal_impl_<NormalKernel, CSPRNGGeneratorImpl>(self, mean, std, generator);
 }
 
-at::Tensor& normal_Tensor_float_out(at::Tensor& output, const at::Tensor& mean, double std, c10::optional<at::Generator> gen) {
+at::Tensor& normal_Tensor_float_out(at::Tensor& output, const at::Tensor& mean, double std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-at::Tensor& normal_float_Tensor_out(at::Tensor& output, double mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+at::Tensor& normal_float_Tensor_out(at::Tensor& output, double mean, const at::Tensor& std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-at::Tensor& normal_Tensor_Tensor_out(at::Tensor& output, const at::Tensor& mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+at::Tensor& normal_Tensor_Tensor_out(at::Tensor& output, const at::Tensor& mean, const at::Tensor& std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_out_impl<NormalKernel, CSPRNGGeneratorImpl>(output, mean, std, gen);
 }
 
-at::Tensor normal_Tensor_float(const at::Tensor& mean, double std, c10::optional<at::Generator> gen) {
+at::Tensor normal_Tensor_float(const at::Tensor& mean, double std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
-at::Tensor normal_float_Tensor(double mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+at::Tensor normal_float_Tensor(double mean, const at::Tensor& std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
-at::Tensor normal_Tensor_Tensor(const at::Tensor& mean, const at::Tensor& std, c10::optional<at::Generator> gen) {
+at::Tensor normal_Tensor_Tensor(const at::Tensor& mean, const at::Tensor& std, std::optional<at::Generator> gen) {
   return at::native::templates::normal_impl<NormalKernel, CSPRNGGeneratorImpl>(mean, std, gen);
 }
 
@@ -268,7 +268,7 @@ at::Tensor normal_Tensor_Tensor(const at::Tensor& mean, const at::Tensor& std, c
 
 template<typename RNG>
 struct CauchyKernel {
-  void operator()(TensorIterator& iter, double median, double sigma, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, double median, double sigma, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "cauchy_kernel", [&] {
@@ -282,7 +282,7 @@ struct CauchyKernel {
   }
 };
 
-at::Tensor& cauchy_(at::Tensor& self, double median, double sigma, c10::optional<at::Generator> generator) {
+at::Tensor& cauchy_(at::Tensor& self, double median, double sigma, std::optional<at::Generator> generator) {
   return at::native::templates::cauchy_impl_<CauchyKernel, CSPRNGGeneratorImpl>(self, median, sigma, generator);
 }
 
@@ -290,7 +290,7 @@ at::Tensor& cauchy_(at::Tensor& self, double median, double sigma, c10::optional
 
 template<typename RNG>
 struct LogNormalKernel {
-  void operator()(TensorIterator& iter, double mean, double std, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, double mean, double std, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "log_normal", [&] {
@@ -304,7 +304,7 @@ struct LogNormalKernel {
   }
 };
 
-at::Tensor& log_normal_(at::Tensor& self, double mean, double std, c10::optional<at::Generator> gen) {
+at::Tensor& log_normal_(at::Tensor& self, double mean, double std, std::optional<at::Generator> gen) {
   return at::native::templates::log_normal_impl_<LogNormalKernel, CSPRNGGeneratorImpl>(self, mean, std, gen);
 }
 
@@ -312,7 +312,7 @@ at::Tensor& log_normal_(at::Tensor& self, double mean, double std, c10::optional
 
 template<typename RNG>
 struct GeometricKernel {
-  void operator()(TensorIterator& iter, double p, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, double p, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "geometric_kernel", [&] {
@@ -326,7 +326,7 @@ struct GeometricKernel {
   }
 };
 
-at::Tensor& geometric_(at::Tensor& self, double p, c10::optional<at::Generator> gen) {
+at::Tensor& geometric_(at::Tensor& self, double p, std::optional<at::Generator> gen) {
   return at::native::templates::geometric_impl_<GeometricKernel, CSPRNGGeneratorImpl>(self, p, gen);
 }
 
@@ -334,7 +334,7 @@ at::Tensor& geometric_(at::Tensor& self, double p, c10::optional<at::Generator> 
 
 template<typename RNG>
 struct ExponentialKernel {
-  void operator()(TensorIterator& iter, double lambda, c10::optional<Generator> generator) {
+  void operator()(TensorIterator& iter, double lambda, std::optional<Generator> generator) {
     const Tensor key_t = aes128_key_tensor<RNG>(*generator).to(iter.device());
     const auto key = key_t.data_ptr<uint8_t>();
     AT_DISPATCH_FLOATING_TYPES_AND2(at::ScalarType::Half, at::ScalarType::BFloat16, iter.dtype(), "exponential_kernel", [&] {
@@ -348,7 +348,7 @@ struct ExponentialKernel {
   }
 };
 
-at::Tensor& exponential_(at::Tensor& self, double lambda, c10::optional<at::Generator> gen) {
+at::Tensor& exponential_(at::Tensor& self, double lambda, std::optional<at::Generator> gen) {
   return at::native::templates::exponential_impl_<ExponentialKernel, CSPRNGGeneratorImpl>(self, lambda, gen);
 }
 
