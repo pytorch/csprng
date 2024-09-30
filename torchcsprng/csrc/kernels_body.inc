@@ -187,7 +187,7 @@ at::Tensor& random_(at::Tensor& self, std::optional<at::Generator> generator) {
   return at::native::templates::random_impl<RandomKernel, CSPRNGGeneratorImpl>(self, generator);
 }
 
-at::Tensor& random_from_to(at::Tensor& self, int64_t from, std::optional<int64_t> to, c10::optional<at::Generator> generator) {
+at::Tensor& random_from_to(at::Tensor& self, int64_t from, std::optional<int64_t> to, std::optional<at::Generator> generator) {
   return at::native::templates::random_from_to_impl<RandomFromToKernel, CSPRNGGeneratorImpl>(self, from, to, generator);
 }
 
