@@ -317,7 +317,7 @@ Tensor decrypt_pybind(Tensor input, Tensor output, Tensor key, const std::string
 
 // ====================================================================================================================
 
-Generator create_random_device_generator(std::optional<std::string> token = c10::nullopt) {
+Generator create_random_device_generator(std::optional<std::string> token = std::nullopt) {
   if (token.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*token);
   } else {
@@ -325,7 +325,7 @@ Generator create_random_device_generator(std::optional<std::string> token = c10:
   }
 }
 
-Generator create_mt19937_generator(std::optional<uint64_t> seed = c10::nullopt) {
+Generator create_mt19937_generator(std::optional<uint64_t> seed = std::nullopt) {
   if (seed.has_value()) {
     return make_generator<CSPRNGGeneratorImpl>(*seed);
   } else {
