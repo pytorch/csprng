@@ -9,7 +9,7 @@
 
 at::Tensor& random_(at::Tensor& self, std::optional<at::Generator> generator);
 
-at::Tensor& random_from_to(at::Tensor& self, int64_t from, optional<int64_t> to, std::optional<at::Generator> generator);
+at::Tensor& random_from_to(at::Tensor& self, int64_t from, std::optional<int64_t> to, std::optional<at::Generator> generator);
 
 at::Tensor& random_to(at::Tensor& self, int64_t to, std::optional<at::Generator> generator);
 

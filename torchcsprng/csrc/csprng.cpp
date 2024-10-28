@@ -38,7 +38,7 @@ Tensor& random_(Tensor& self, std::optional<Generator> gen) {
   }
 }
 
-Tensor& random_from_to(Tensor& self, int64_t from, optional<int64_t> to,
+Tensor& random_from_to(Tensor& self, int64_t from, std::optional<int64_t> to,
                        std::optional<Generator> gen) {
   if (self.device().type() == DeviceType::CPU) {
     return cpu::random_from_to(self, from, to, gen);
