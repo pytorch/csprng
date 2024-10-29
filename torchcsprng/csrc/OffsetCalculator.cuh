@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include <array>
-#include <cstdint>
-#include <c10/macros/Macros.h>
 #include <ATen/core/Array.h>
 #include <ATen/native/TensorIterator.h>
+#include <c10/macros/Macros.h>
+#include <array>
+#include <cstdint>
 #include "THCIntegerDivider.cuh"
 
 /// OffsetCalculator calculates the offset in bytes of a linear index for NARGS
@@ -33,7 +33,12 @@ struct OffsetCalculator {
 
   // if element_sizes is nullptr, then the strides will be in bytes, otherwise
   // the strides will be in # of elements.
-  OffsetCalculator(int dims, const int64_t* sizes, const int64_t* const* strides, const int64_t* element_sizes=nullptr) : dims(dims) {
+  OffsetCalculator(
+      int dims,
+      const int64_t* sizes,
+      const int64_t* const* strides,
+      const int64_t* element_sizes = nullptr)
+      : dims(dims) {
     TORCH_CHECK(dims <= MAX_DIMS, "tensor has too many (>", MAX_DIMS, ") dims");
     for (int i = 0; i < MAX_DIMS; ++i) {
       if (i < dims) {
@@ -42,8 +47,9 @@ struct OffsetCalculator {
         sizes_[i] = IntDivider<index_t>(1);
       }
       for (int arg = 0; arg < NARGS; arg++) {
-        int64_t element_size = (element_sizes == nullptr ? 1LL : element_sizes[arg]);
-        strides_[i][arg] =  i < dims ? strides[arg][i] / element_size : 0;
+        int64_t element_size =
+            (element_sizes == nullptr ? 1LL : element_sizes[arg]);
+        strides_[i][arg] = i < dims ? strides[arg][i] / element_size : 0;
       }
     }
   }
@@ -67,7 +73,6 @@ struct OffsetCalculator {
       for (int arg = 0; arg < NARGS; arg++) {
         offsets[arg] += divmod.mod * strides_[dim][arg];
       }
-
     }
     return offsets;
   }
@@ -96,8 +101,9 @@ struct TrivialOffsetCalculator {
   }
 };
 
-template<int N>
-static OffsetCalculator<N> make_offset_calculator(const at::TensorIterator& iter) {
+template <int N>
+static OffsetCalculator<N> make_offset_calculator(
+    const at::TensorIterator& iter) {
   AT_ASSERT(N <= iter.ntensors());
   std::array<const int64_t*, N> strides;
   for (int i = 0; i < N; i++) {

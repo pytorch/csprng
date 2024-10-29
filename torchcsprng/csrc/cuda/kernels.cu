@@ -13,4 +13,6 @@ namespace cuda {
 
 #include "../kernels_body.inc"
 
-}}}
+}
+} // namespace csprng
+} // namespace torch
