@@ -39,7 +39,6 @@ def to_bytes(t):
 
 
 class TestCSPRNG(unittest.TestCase):
-
     all_generators = [
         csprng.create_random_device_generator(),
         csprng.create_random_device_generator("/dev/urandom"),
