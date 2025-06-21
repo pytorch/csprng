@@ -9,7 +9,6 @@
 #include <torch/library.h>
 
 #include <ATen/Generator.h>
-#include <ATen/Tensor.h>
 #include <ATen/core/op_registration/op_registration.h>
 
 #include "cpu/kernels.h"
