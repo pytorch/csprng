@@ -80,6 +80,7 @@ The following is the corresponding CSPRNG versions and supported Python versions
 
 | PyTorch | CSPRNG | Python   | CUDA             |
 |---------|--------|----------|------------------|
+| 1.8.1   | 0.2.1  | 3.7-3.9  | 10.1, 10.2, 11.1 |
 | 1.8.0   | 0.2.0  | 3.7-3.9  | 10.1, 10.2, 11.1 |
 | 1.7.1   | 0.1.4  | 3.6-3.8  | 9.2, 10.1, 10.2  |
 | 1.7.0   | 0.1.3  | 3.6-3.8  | 9.2, 10.1, 10.2  |
@@ -99,7 +100,7 @@ pip:
 
 | OS            | CUDA                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 |---------------|------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Linux/Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | pip install torchcsprng==0.2.0+cu101 torch==1.8.0+cu101 -f https://download.pytorch.org/whl/cu101/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0 torch==1.8.0 -f https://download.pytorch.org/whl/cu102/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cu111 torch==1.8.0+cu111 -f https://download.pytorch.org/whl/cu111/torch_stable.html <br/><br/>pip install torchcsprng==0.2.0+cpu torch==1.8.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html |
+| Linux/Windows | 10.1<br/><br/>10.2<br/><br/>11.1<br/><br/>None | pip install torchcsprng==0.2.1+cu101 torch==1.8.1+cu101 -f https://download.pytorch.org/whl/cu101/torch_stable.html <br/><br/>pip install torchcsprng==0.2.1 torch==1.8.1 -f https://download.pytorch.org/whl/cu102/torch_stable.html <br/><br/>pip install torchcsprng==0.2.1+cu111 torch==1.8.1+cu111 -f https://download.pytorch.org/whl/cu111/torch_stable.html <br/><br/>pip install torchcsprng==0.2.1+cpu torch==1.8.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html |
 | macOS         | None                                           | pip install torchcsprng torch                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ### Nightly builds:
